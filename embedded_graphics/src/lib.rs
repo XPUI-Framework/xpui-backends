@@ -91,7 +91,8 @@ pub use fonts::Fonts;
 #[cfg(feature = "framebuffer")]
 pub use framebuffer::Framebuffer;
 pub use input::InputState;
-pub use xpui_chrome::{Board, Tokens};
+pub use xpui_boards::Board;
+pub use xpui_chrome::Tokens;
 
 /// The two colours ink and background map onto.
 #[derive(Copy, Clone, Debug)]

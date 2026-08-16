@@ -16,13 +16,19 @@ crate-type = ["rlib"]
 
 [dependencies]
 xpui.workspace = true
+xpui-boards.workspace = true
 xpui-chrome.workspace = true
 embedded-graphics = "0.8"
 
+# Only ever reached through the `framebuffer` feature, which is host-only, so a
+# firmware never links it. Pinned to a minor version because the goldens it
+# writes are committed.
+png = { version = "0.18", optional = true }
+
 [features]
-# A host-side framebuffer with BMP and ASCII output, for screenshot tests.
-# `std` only: it writes files.
-framebuffer = []
+# A host-side framebuffer and the screenshot goldens taken from it.
+# `std` only: it reads and writes files.
+framebuffer = ["dep:png"]
 # Lets xpui's UI harness feed this backend input. Pulls in xpui/testing, which
 # is why it is a feature rather than always on: a firmware should not carry the
 # test doubles.

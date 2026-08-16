@@ -1,4 +1,4 @@
-//! A framebuffer to draw into, and three ways to look at it.
+//! A framebuffer to draw into, and several ways to look at it.
 //!
 //! Behind the `framebuffer` feature, and `std` only. It exists so an app built
 //! on this backend can render a screen with no window and no hardware, then
@@ -10,10 +10,15 @@
 //! unsafe { xpui::host::install(backend) };
 //! App::new(MyScreen::new()).render();
 //! backend.with_display(|fb| {
-//!     fb.write_bmp("my_screen");        // look at it
-//!     assert!(fb.ink_count() > 0);      // or assert on it
+//!     assert_screenshot("my_screen", fb);   // the assertion
+//!     assert!(fb.ink_in(0, 0, 480, 56) > 0) // and anything a picture cannot say
 //! });
 //! ```
+//!
+//! [`Framebuffer::to_png`] and [`Framebuffer::from_png`] are the format the
+//! committed goldens are in; [`crate::screenshot::assert_screenshot`] is what
+//! compares them. [`Framebuffer::thumbnail`] and [`Framebuffer::write_bmp`]
+//! are for looking, not for asserting.
 
 use std::fs;
 use std::path::PathBuf;
@@ -67,19 +72,29 @@ impl Framebuffer {
         count
     }
 
-    /// A coarse ASCII view, `columns` characters wide.
+    /// The pixel size of one [`thumbnail`](Self::thumbnail) character cell, as
+    /// `(width, height)`.
     ///
-    /// Full resolution is unreadable in a diff — a 480x800 panel is 384,000
-    /// characters. Averaging blocks down to about sixty columns keeps a
-    /// screenshot small enough to review while still showing layout: a list
-    /// that moved, a header that vanished, a dialog off-centre.
-    pub fn thumbnail(&self, columns: i32) -> String {
-        const SHADES: [char; 5] = [' ', '.', ':', '#', '@'];
-
+    /// Public because anything that annotates a thumbnail — marking the cells
+    /// that changed, say — has to divide coordinates the same way, and two
+    /// copies of this arithmetic would drift.
+    pub fn block_size(&self, columns: i32) -> (i32, i32) {
         let block = (self.width as f32 / columns as f32).ceil() as i32;
         // Character cells are about twice as tall as they are wide, so square
         // blocks would squash the picture.
-        let block_y = block * 2;
+        (block, block * 2)
+    }
+
+    /// A coarse ASCII view, `columns` characters wide.
+    ///
+    /// Deliberately lossy, and never an assertion: a block is 8x16 pixels, so
+    /// a shift smaller than that is invisible to it. It is for *reading* — in
+    /// a failed screenshot's message, or a `println!` while debugging — where
+    /// showing a list that moved or a dialog off-centre is the whole job.
+    pub fn thumbnail(&self, columns: i32) -> String {
+        const SHADES: [char; 5] = [' ', '.', ':', '#', '@'];
+
+        let (block, block_y) = self.block_size(columns);
 
         let mut out = String::new();
         let mut y = 0;
