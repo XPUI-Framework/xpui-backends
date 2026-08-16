@@ -4,7 +4,33 @@
 //! That covers most of the embedded Rust display ecosystem: e-paper panels,
 //! SSD1306 and friends, colour TFTs, and the desktop simulator.
 //!
-//! ```rust,ignore
+//! ```rust,no_run
+//! # use embedded_graphics::pixelcolor::BinaryColor;
+//! # use embedded_graphics::prelude::*;
+//! # use embedded_graphics::primitives::Rectangle;
+//! # use xpui::{App, Button, Screen, Text, View};
+//! # use xpui_eg::{Backend, Palette};
+//! # /// Whatever driver you already have: a panel, an OLED, a colour TFT.
+//! # struct MyPanel;
+//! # impl MyPanel { fn flush(&mut self) {} }
+//! # impl Dimensions for MyPanel {
+//! #     fn bounding_box(&self) -> Rectangle { Rectangle::new(Point::zero(), Size::new(480, 800)) }
+//! # }
+//! # impl DrawTarget for MyPanel {
+//! #     type Color = BinaryColor;
+//! #     type Error = core::convert::Infallible;
+//! #     fn draw_iter<I>(&mut self, _pixels: I) -> Result<(), Self::Error>
+//! #     where I: IntoIterator<Item = Pixel<Self::Color>> { Ok(()) }
+//! # }
+//! # struct MainMenu;
+//! # impl MainMenu { fn new() -> Self { MainMenu } }
+//! # impl Screen for MainMenu {
+//! #     type Message = ();
+//! #     fn body(&self) -> impl View<()> { Text::new("Main menu") }
+//! #     fn update(&mut self, _message: ()) {}
+//! # }
+//! # fn millis_since_boot() -> u32 { 0 }
+//! # let display = MyPanel;
 //! let backend = Backend::leak(display, Palette::INK_IS_ON);
 //! unsafe { xpui::host::install(backend) };
 //!
@@ -14,7 +40,7 @@
 //!     backend.press(Button::Down);          // from wherever your input comes from
 //!     app.tick();
 //!     app.render_if_dirty();
-//!     backend.flush();
+//!     backend.with_display(|display| display.flush());
 //! }
 //! ```
 //!
@@ -547,4 +573,42 @@ xpui_chrome::plain_chrome! {
     // be driving two different panels.
     tokens: |backend| &backend.tokens,
     request_update: |backend| backend.dirty.set(true),
+}
+
+/// Lets `xpui`'s UI harness feed this backend input.
+///
+/// The methods already exist as inherent ones; this names them through a trait
+/// so the harness can drive any backend without knowing which it has.
+#[cfg(feature = "testing")]
+impl<D: DrawTarget> xpui::testing::Drive for Backend<D> {
+    fn begin(&self, millis: u32) {
+        self.begin_frame(millis);
+    }
+
+    fn inject_press(&self, button: Button) {
+        self.press(button);
+    }
+
+    fn inject_release(&self, button: Button) {
+        self.release(button);
+    }
+
+    fn inject_tap(&self, point: Point) {
+        self.tap(point);
+    }
+
+    fn inject_swipe(&self, direction: SwipeDir) {
+        self.swipe(direction);
+    }
+}
+
+/// The crate's prose, compiled.
+///
+/// A README that does not build is worse than none: this crate's only usage
+/// example passed the wrong form to its own macro for as long as nothing
+/// tried it.
+#[cfg(doctest)]
+mod guides {
+    #[doc = include_str!("../README.md")]
+    pub mod readme {}
 }

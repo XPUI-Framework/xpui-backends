@@ -23,7 +23,11 @@ embedded-graphics = "0.8"
 # A host-side framebuffer with BMP and ASCII output, for screenshot tests.
 # `std` only: it writes files.
 framebuffer = []
+# Lets xpui's UI harness feed this backend input. Pulls in xpui/testing, which
+# is why it is a feature rather than always on: a firmware should not carry the
+# test doubles.
+testing = ["xpui/testing"]
 
 [dev-dependencies]
 xpui = { workspace = true, features = ["testing"] }
-xpui-embedded-graphics = { path = ".", features = ["framebuffer"] }
+xpui-embedded-graphics = { path = ".", features = ["framebuffer", "testing"] }
