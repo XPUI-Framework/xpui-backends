@@ -1,0 +1,29 @@
+[package]
+name = "xpui-embedded-graphics"
+description = "An xpui backend that draws through any embedded-graphics DrawTarget"
+readme = "README.md"
+keywords = ["ui", "embedded", "no-std", "eink", "embedded-graphics"]
+categories = ["embedded", "gui", "no-std"]
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+name = "xpui_eg"
+crate-type = ["rlib"]
+
+[dependencies]
+xpui.workspace = true
+xpui-chrome.workspace = true
+embedded-graphics = "0.8"
+
+[features]
+# A host-side framebuffer with BMP and ASCII output, for screenshot tests.
+# `std` only: it writes files.
+framebuffer = []
+
+[dev-dependencies]
+xpui = { workspace = true, features = ["testing"] }
+xpui-embedded-graphics = { path = ".", features = ["framebuffer"] }
