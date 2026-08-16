@@ -1,0 +1,30 @@
+[package]
+name = "xpui-fui"
+description = "An xpui backend that draws through FreeInkUI, over a C ABI"
+readme = "README.md"
+keywords = ["ui", "embedded", "no-std", "eink", "freeink"]
+categories = ["embedded", "gui", "no-std"]
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+# The C++ half has to reach a consuming firmware's build, so it ships with the
+# crate rather than only living in the repository.
+include = ["src/**", "cpp/**", "README.md"]
+
+[lib]
+name = "xpui_fui"
+crate-type = ["rlib"]
+
+[features]
+# Swaps the C entry points for host doubles, so the Rust half can be tested
+# without a firmware to link against.
+testing = []
+
+[dependencies]
+xpui.workspace = true
+
+[dev-dependencies]
+xpui = { workspace = true, features = ["testing"] }
+xpui-fui = { path = ".", features = ["testing"] }
