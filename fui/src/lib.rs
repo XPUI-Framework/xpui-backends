@@ -24,10 +24,23 @@
 //!
 //! # Wiring it up
 //!
-//! ```rust,ignore
+//! ```rust,no_run
+//! # use xpui::Button;
+//! # use xpui_fui::{Backend, Platform};
+//! # struct MyPlatform;
+//! # impl Platform for MyPlatform {
+//! #     fn millis(&self) -> u32 { 0 }
+//! #     fn was_pressed(&self, _button: Button) -> bool { false }
+//! #     fn is_pressed(&self, _button: Button) -> bool { false }
+//! #     fn was_released(&self, _button: Button) -> bool { false }
+//! # }
+//! # let mut framebuffer = [0u8; 480 * 800 / 8];
 //! // Once, with the panel's framebuffer.
 //! unsafe { xpui_fui::attach(framebuffer.as_mut_ptr(), 480, 800) };
-//! unsafe { xpui::host::install(xpui_fui::backend()) };
+//!
+//! static PLATFORM: MyPlatform = MyPlatform;
+//! static BACKEND: Backend<MyPlatform> = Backend::new(&PLATFORM);
+//! unsafe { xpui::host::install(&BACKEND) };
 //! ```
 //!
 //! Add `cpp/xpui_fui.cpp` to the firmware's build and put FreeInkUI's include
@@ -133,7 +146,11 @@ pub unsafe fn attach(framebuffer: *mut u8, width: i32, height: i32) {
     unsafe { raw::xpui_fui_attach(framebuffer, width, height) }
 }
 
-/// Borrows a NUL-terminated C string the C++ side owns, as bytes.
+/// Copies `text` into a NUL-terminated buffer for the C++ side to read.
+///
+/// The C++ side reads it during the call and keeps nothing, so the buffer is
+/// freed as soon as the call returns. A string with an interior NUL cannot be
+/// represented as one, and comes back empty rather than silently truncated.
 fn as_c(text: &str) -> alloc::ffi::CString {
     alloc::ffi::CString::new(text).unwrap_or_default()
 }
@@ -476,3 +493,14 @@ const _: raw::CellFn = cell_trampoline;
 /// Unused, but it keeps `c_void` imported where the ABI needs it.
 #[doc(hidden)]
 pub type Context = *mut c_void;
+
+/// The crate's prose, compiled.
+///
+/// A README that does not build is worse than none: this crate's only usage
+/// example passed the wrong form to its own macro for as long as nothing
+/// tried it.
+#[cfg(doctest)]
+mod guides {
+    #[doc = include_str!("../README.md")]
+    pub mod readme {}
+}

@@ -27,7 +27,17 @@ implement the same ABI itself instead — that is a supported path, not a fork.
 
 ## Wiring it up
 
-```rust
+```rust,no_run
+# use xpui::Button;
+# use xpui_fui::{Backend, Platform};
+# struct MyPlatform;
+# impl Platform for MyPlatform {
+#     fn millis(&self) -> u32 { 0 }
+#     fn was_pressed(&self, _button: Button) -> bool { false }
+#     fn is_pressed(&self, _button: Button) -> bool { false }
+#     fn was_released(&self, _button: Button) -> bool { false }
+# }
+# let mut framebuffer = [0u8; 480 * 800 / 8];
 // Once, with the panel's framebuffer.
 unsafe { xpui_fui::attach(framebuffer.as_mut_ptr(), 480, 800) };
 
@@ -45,15 +55,28 @@ directory on the path. See [`cpp/README.md`](cpp/README.md).
 tell you whether a button was pressed; whatever drives the panel already knows.
 
 ```rust
+# use xpui::Button;
+# use xpui_fui::Platform;
+# struct MyPlatform;
+# struct Buttons;
+# impl Buttons {
+#     fn pressed(&self, _button: Button) -> bool { false }
+#     fn held(&self, _button: Button) -> bool { false }
+#     fn released(&self, _button: Button) -> bool { false }
+# }
+# fn my_input() -> Buttons { Buttons }
+# fn my_clock() -> u32 { 0 }
 impl Platform for MyPlatform {
     fn millis(&self) -> u32 { my_clock() }
     fn was_pressed(&self, button: Button) -> bool { my_input().pressed(button) }
-    // ...
+    fn is_pressed(&self, button: Button) -> bool { my_input().held(button) }
+    fn was_released(&self, button: Button) -> bool { my_input().released(button) }
 }
 ```
 
-Touch and gestures are defaulted to "nothing happened", so a button-only device
-implements three methods.
+Those four are the whole obligation: touch and the gestures default to "nothing
+happened", so a button-only device implements no more than this. `NoInput`
+implements exactly those four and nothing else, for a panel that only displays.
 
 ## The distinctions that break things quietly
 

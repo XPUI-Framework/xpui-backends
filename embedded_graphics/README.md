@@ -4,7 +4,33 @@ An [`xpui`](../../xpui/) backend that draws through any `embedded-graphics`
 `DrawTarget` — which is most of the embedded Rust display ecosystem: e-paper
 panels, SSD1306 and friends, colour TFTs, and the desktop simulator.
 
-```rust
+```rust,no_run
+# use embedded_graphics::pixelcolor::BinaryColor;
+# use embedded_graphics::prelude::*;
+# use embedded_graphics::primitives::Rectangle;
+# use xpui::{App, Button, Screen, Text, View};
+# use xpui_eg::{Backend, Palette};
+# /// Whatever driver you already have: a panel, an OLED, a colour TFT.
+# struct MyPanel;
+# impl MyPanel { fn flush(&mut self) {} }
+# impl Dimensions for MyPanel {
+#     fn bounding_box(&self) -> Rectangle { Rectangle::new(Point::zero(), Size::new(480, 800)) }
+# }
+# impl DrawTarget for MyPanel {
+#     type Color = BinaryColor;
+#     type Error = core::convert::Infallible;
+#     fn draw_iter<I>(&mut self, _pixels: I) -> Result<(), Self::Error>
+#     where I: IntoIterator<Item = Pixel<Self::Color>> { Ok(()) }
+# }
+# struct MainMenu;
+# impl MainMenu { fn new() -> Self { MainMenu } }
+# impl Screen for MainMenu {
+#     type Message = ();
+#     fn body(&self) -> impl View<()> { Text::new("Main menu") }
+#     fn update(&mut self, _message: ()) {}
+# }
+# fn millis_since_boot() -> u32 { 0 }
+# let display = MyPanel;
 let backend = Backend::leak(display, Palette::new(BinaryColor::On, BinaryColor::Off));
 unsafe { xpui::host::install(backend) };
 
@@ -43,6 +69,11 @@ colour, because the framework has no way to.
 buffer between your event source and the framework:
 
 ```rust
+# use xpui::{Button, Point};
+# use xpui_eg::{Backend, Framebuffer, Palette};
+# let backend = Backend::new(Framebuffer::new(480, 800), Palette::INK_IS_ON);
+# let (millis, x, y) = (0, 40, 120);
+# let at = Point::new(x, y);
 backend.begin_frame(millis);        // clears one-frame edges, sets the clock
 backend.press(Button::Confirm);     // an edge: true for exactly this frame
 backend.tap(Point::new(x, y));
@@ -61,7 +92,9 @@ xpui-embedded-graphics = { version = "0.1", features = ["framebuffer"] }
 `Framebuffer` is a plain 1-bit `DrawTarget` with no window and no hardware, so
 a screen can be rendered and asserted on in an ordinary `cargo test`:
 
-```rust
+```rust,no_run
+# use xpui_eg::{Backend, Framebuffer, Palette};
+# let backend = Backend::new(Framebuffer::new(480, 800), Palette::INK_IS_ON);
 backend.with_display(|frame| {
     frame.write_bmp("my_screen");           // a BMP you can open
     println!("{}", frame.thumbnail(60));    // an ASCII view small enough to diff
