@@ -86,11 +86,15 @@ mod fonts;
 #[cfg(feature = "framebuffer")]
 pub mod framebuffer;
 mod input;
+#[cfg(feature = "framebuffer")]
+pub mod screenshot;
 
 pub use fonts::Fonts;
 #[cfg(feature = "framebuffer")]
 pub use framebuffer::Framebuffer;
 pub use input::InputState;
+#[cfg(feature = "framebuffer")]
+pub use screenshot::assert_screenshot;
 pub use xpui_boards::Board;
 pub use xpui_chrome::Tokens;
 

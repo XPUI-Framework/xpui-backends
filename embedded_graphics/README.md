@@ -93,16 +93,26 @@ xpui-embedded-graphics = { version = "0.1", features = ["framebuffer"] }
 a screen can be rendered and asserted on in an ordinary `cargo test`:
 
 ```rust,no_run
-# use xpui_eg::{Backend, Framebuffer, Palette};
+# use xpui_eg::{assert_screenshot, Backend, Framebuffer, Palette};
 # let backend = Backend::new(Framebuffer::new(480, 800), Palette::INK_IS_ON);
 backend.with_display(|frame| {
-    frame.write_bmp("my_screen");           // a BMP you can open
-    println!("{}", frame.thumbnail(60));    // an ASCII view small enough to diff
-    assert!(frame.ink_in(0, 0, 480, 56) > 0);
+    assert_screenshot("my_screen", frame);      // against a committed PNG
+    assert!(frame.ink_in(0, 0, 480, 56) > 0);   // and what a picture cannot say
 });
 ```
 
+`assert_screenshot` compares the whole panel against
+`tests/screenshots/my_screen.png` in the crate being tested, pixel for pixel.
+The first run writes the golden and fails, so that nobody commits a picture
+they never looked at; `UPDATE_SNAPSHOTS=1` rewrites it afterwards. A mismatch
+prints an ASCII view marking every block that changed and writes
+`target/diff/my_screen.png` — expected, actual and the differences, side by
+side.
+
 That is how this crate's own tests work — see `tests/screenshots.rs`.
+
+`write_bmp` and `thumbnail` are still there, and are for looking at a frame
+rather than asserting on one. Nothing compares them.
 
 ## One thing worth knowing
 

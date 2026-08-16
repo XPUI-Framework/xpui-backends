@@ -113,12 +113,91 @@ impl Framebuffer {
         out
     }
 
+    /// The panel as a 1-bit greyscale PNG: the format the committed
+    /// screenshot goldens are written in.
+    ///
+    /// Encoded deterministically. The compression level and the row filter are
+    /// pinned rather than left to a default that may move, and nothing here
+    /// writes a timestamp, so re-blessing a screen that did not change
+    /// rewrites the same bytes and leaves no diff to review.
+    pub fn to_png(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+        let mut encoder = png::Encoder::new(&mut out, self.width as u32, self.height as u32);
+        encoder.set_color(png::ColorType::Grayscale);
+        encoder.set_depth(png::BitDepth::One);
+        encoder.set_compression(png::Compression::High);
+        // `Up` rather than `Adaptive`: the adaptive filter picks per row by
+        // measuring, which is one more thing that can change between releases
+        // of the encoder for no change in the image.
+        encoder.set_filter(png::Filter::Up);
+
+        let mut writer = encoder
+            .write_header()
+            .expect("a 1-bit greyscale header is always valid");
+        writer
+            .write_image_data(&self.packed_rows())
+            .expect("the row buffer is sized from the header");
+        writer.finish().expect("writing to a Vec cannot fail");
+
+        out
+    }
+
+    /// Reads back what [`to_png`](Self::to_png) wrote.
+    ///
+    /// Accepts any bit depth and greyscale or RGB, because a golden may have
+    /// passed through an image editor on its way back in; every non-white
+    /// pixel is ink. Fails rather than panics, so a corrupt golden reports
+    /// itself as a corrupt golden.
+    pub fn from_png(bytes: &[u8]) -> Result<Framebuffer, String> {
+        let mut decoder = png::Decoder::new(std::io::Cursor::new(bytes));
+        // Unpacks sub-byte depths and drops 16-bit samples to 8, so what comes
+        // back is one byte per sample whatever the file holds.
+        decoder.set_transformations(png::Transformations::normalize_to_color8());
+
+        let mut reader = decoder.read_info().map_err(|e| e.to_string())?;
+        let mut buffer = vec![0u8; reader.output_buffer_size().ok_or("image is too large")?];
+        let info = reader.next_frame(&mut buffer).map_err(|e| e.to_string())?;
+
+        let samples = info.color_type.samples();
+        let mut frame = Framebuffer::new(info.width as i32, info.height as i32);
+        for y in 0..info.height as usize {
+            for x in 0..info.width as usize {
+                let sample = buffer[y * info.line_size + x * samples];
+                frame.pixels[y * info.width as usize + x] = sample < 0x80;
+            }
+        }
+        Ok(frame)
+    }
+
+    /// Rows packed the way a 1-bit greyscale PNG wants them: top down, one bit
+    /// per pixel, and 0 is black.
+    fn packed_rows(&self) -> Vec<u8> {
+        let row_bytes = (self.width as usize).div_ceil(8);
+        let mut out = Vec::with_capacity(row_bytes * self.height as usize);
+        for row in 0..self.height {
+            // Filled with paper: a width that is not a multiple of eight
+            // leaves spare bits in the last byte, and as ink they draw a
+            // stripe down the right edge.
+            let mut line = vec![0xFFu8; row_bytes];
+            for column in 0..self.width {
+                if self.get(column, row) {
+                    line[(column / 8) as usize] &= !(0x80 >> (column % 8));
+                }
+            }
+            out.extend_from_slice(&line);
+        }
+        out
+    }
+
     /// Writes a 1-bit BMP next to the test binary, so a person can actually
     /// look at the frame.
     ///
-    /// BMP rather than PNG because a 1-bit BMP is sixty lines of header and no
-    /// compression, and this crate is not taking an image dependency to
-    /// produce a debugging artifact. Opens in anything.
+    /// A debugging helper, and only that: **nothing compares a BMP**. The
+    /// assertion is [`crate::screenshot::assert_screenshot`] against a
+    /// committed PNG. Reach for this when you want to eyeball a frame from a
+    /// test that has no golden — the icon sheet, or the simulator's screenshot
+    /// key — and do not pair it with a screenshot assertion, because two
+    /// artifacts where one is authoritative is how the other one gets trusted.
     pub fn write_bmp(&self, name: &str) -> PathBuf {
         self.write_bmp_in(screenshot_dir(), name)
     }

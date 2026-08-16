@@ -446,9 +446,10 @@ fn an_unknown_icon_reports_no_size_and_draws_nothing() {
 
 // -- the tools the screenshots depend on -----------------------------------
 
-/// Every screenshot golden is a `thumbnail`, and every artifact a `write_bmp`.
-/// A fault in either silently invalidates all of them, so they get their own
-/// tests rather than being trusted because the goldens "look right".
+/// A `thumbnail` is what a failed screenshot prints and a `write_bmp` is what
+/// a test with no golden leaves behind. Neither is an assertion, so nothing
+/// else would notice either of them going wrong — a thumbnail that showed the
+/// wrong thing would make every screenshot failure unreadable.
 #[test]
 fn a_thumbnail_reflects_what_is_in_the_framebuffer() {
     let mut display = TestDisplay::new(64, 64);

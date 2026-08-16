@@ -6,35 +6,24 @@
 //! measured with one font and painted with another, chrome drawn under content
 //! instead of over it, a clip that never gets lifted.
 //!
-//! Each case asserts a coarse ASCII view of the panel against a golden, and
-//! writes a full-resolution BMP to `target/screenshots/` so a person can
-//! actually look at it.
+//! Each case compares the whole panel against a committed PNG in
+//! `tests/screenshots/`, pixel for pixel. The numeric assertions beside them
+//! pin the things a picture cannot argue about on its own.
 //!
 //! ```bash
 //! UPDATE_SNAPSHOTS=1 cargo test -p xpui-embedded-graphics
-//! open target/screenshots/
+//! open crates/backend/embedded_graphics/tests/screenshots/
 //! ```
 
-use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard};
 
-/// One place for every screenshot, inside the workspace's target directory.
-///
-/// `CARGO_TARGET_TMPDIR` is a compile-time variable cargo sets for integration
-/// tests; the working directory at run time is the crate root, which in a
-/// workspace is the wrong place.
-fn screenshots() -> PathBuf {
-    PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("../screenshots")
-}
-
 use xpui::screen::Screen;
-use xpui::testing::assert_text_snapshot;
 use xpui::{
     App, Button, Hint, List, ListRow, Modal, NavigationScreen, ProgressBar, Scrim, ScrollView,
     Section, Slider, Stepper, Text, Toggle, View, hstack, vstack,
 };
 use xpui_eg::Framebuffer as TestDisplay;
-use xpui_eg::{Backend, Palette};
+use xpui_eg::{Backend, Palette, assert_screenshot};
 
 /// A portrait e-reader panel.
 const WIDTH: i32 = 480;
@@ -67,11 +56,7 @@ fn shoot<S: Screen + 'static>(name: &str, screen: S) -> &'static Backend<TestDis
 }
 
 fn capture(backend: &'static Backend<TestDisplay>, name: &str) {
-    let (thumbnail, _) = backend.with_display(|display| {
-        let path = display.write_bmp_in(screenshots(), name);
-        (display.thumbnail(60), path)
-    });
-    assert_text_snapshot(name, &thumbnail);
+    backend.with_display(|display| assert_screenshot(name, display));
 }
 
 // -- screens ---------------------------------------------------------------
@@ -206,9 +191,10 @@ fn settings_screen() {
     let _guard = serial();
     let backend = shoot("settings", Settings { hyphenation: true });
 
-    // A screenshot golden proves the whole frame; these pin the parts a coarse
-    // thumbnail cannot tell apart. "Some ink somewhere" would be true of any
-    // frame at all, so each one names a band and what belongs in it.
+    // The golden proves the frame is the one that was blessed; these say what
+    // makes it the right frame, so a reviewer blessing a change can tell.
+    // "Some ink somewhere" would be true of any frame at all, so each one
+    // names a band and what belongs in it.
     let header = backend.with_display(|d| d.ink_in(0, 0, WIDTH, 56));
     let hints = backend.with_display(|d| d.ink_in(0, HEIGHT - 40, WIDTH, 40));
     let between = backend.with_display(|d| d.ink_in(0, 56, WIDTH, HEIGHT - 96));
