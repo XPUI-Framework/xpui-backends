@@ -15,6 +15,10 @@
 //! | `src/` | the Rust `Host` implementation, over a C ABI ([`raw`]) |
 //! | `cpp/` | that ABI implemented against FreeInkUI's own `DrawTarget` |
 //!
+//! The boundary runs both ways. [`raw`] is what Rust calls to draw;
+//! [`lifecycle`] is what a host calls to run a screen, and those symbols are
+//! defined here in Rust with `cpp/xpui_screen.h` as their declaration.
+//!
 //! The C++ half is deliberately **not** written against any particular
 //! firmware's renderer. It binds to `freeink::ui::DisplayTarget`, which is
 //! dependency-free and takes a plain 1-bit framebuffer, so any project that
@@ -58,6 +62,7 @@ mod backend;
 mod canvas;
 mod cells;
 mod chrome;
+pub mod lifecycle;
 mod marshal;
 mod platform;
 pub mod raw;

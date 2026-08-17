@@ -15,9 +15,20 @@ pixels. That is the whole reason to sit on it rather than beside it.
 | `cpp/` | that ABI implemented against FreeInkUI |
 
 `cpp/xpui_fui.h` is the contract. `src/raw.rs` declares exactly those symbols
-and `cpp/xpui_fui.cpp` defines them. All three move together, and **nothing
-checks that they agree** — a mismatch is a link error at best and a corrupt
-call frame at worst.
+and `cpp/xpui_fui.cpp` defines them. All three move together, and a mismatch is
+a link error at best and a corrupt call frame at worst.
+
+`ffi_symbols_agree()` in `build-and-test.sh` checks that every **name** exists
+in every place it is written down — the header, the Rust declarations, the shim
+and the host doubles. **It does not check types.** Two parameters swapped still
+links, because C has no mangling to disagree with, and the symptom is a
+rendering fault somewhere unrelated. That is what
+[spec 07](../../../docs/specs/07-ffi-checker.md) is for.
+
+The boundary runs both ways: `cpp/xpui_screen.h` declares six lifecycle entry
+points that `src/lifecycle.rs` **defines**, so a C++ host can drive a Rust
+screen through an opaque handle. `examples/cpp_host` is a worked example of
+both directions.
 
 The C++ half binds to `freeink::ui::DisplayTarget`, which is dependency-free
 and takes a plain 1-bit framebuffer. It is deliberately *not* written against
