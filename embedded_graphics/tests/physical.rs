@@ -27,13 +27,21 @@ use xpui_eg::{Backend, Board, Framebuffer, Palette};
 /// - **A touch target.** Between the 5mm of a fingertip and the 7mm every
 ///   phone platform asks for. The touch boards reach it only because of their
 ///   UI scale: at the button-era 44px both would fall short.
-/// - **A line of body text.** The weakest of the four, and honestly so: it is
-///   what this backend's font set can put on the densest panel it drives, not
-///   what a reader deserves. See `Fonts::for_tokens`.
+/// - **A line of body text.** Above the 3mm a row is judged by, on every panel
+///   here. The binding case is the X3: at 257 ppi it is the densest panel this
+///   backend drives, and the 30-pixel face it shares with the X4 is 3.4mm
+///   there and 2.9mm here. On the X4 itself — the panel the firmware's own
+///   figure was measured on — the same face is the firmware's 3.4mm.
+///
+/// - **A line of body text on a reader.** What the firmware achieves from a
+///   29-pixel line, asserted on the panel it was measured on rather than
+///   averaged across a Badger. This is the one that fails if the type ever
+///   goes back to being chosen by what a font set happens to have.
 const ROW_FLOOR: i32 = 35;
 const TOUCH_ROW_FLOOR: i32 = 50;
 const TOUCH_TARGET_FLOOR: i32 = 55;
-const LINE_FLOOR: i32 = 17;
+const LINE_FLOOR: i32 = 29;
+const READER_LINE_FLOOR: i32 = 34;
 
 /// The installed host is process-wide, so the font cases take turns.
 static SERIAL: Mutex<()> = Mutex::new(());
@@ -137,6 +145,31 @@ fn body_text_can_be_read_on_every_panel() {
     }
 }
 
+/// What a line of body text measures on the panels this framework was written
+/// beside.
+///
+/// The firmware puts 29 pixels on an X4 and calls it 3.4mm. This is the same
+/// claim, made of the readers rather than of every panel: a Badger's 111 ppi
+/// would carry a floor that a 218-ppi reader fails, which is how body text
+/// ends up sized by what a font set happens to ship.
+#[test]
+fn a_reader_gets_the_body_text_the_firmware_gets() {
+    let _guard = serial();
+
+    for board in [Board::X4, Board::X4_PRO, Board::STICKY] {
+        let line = tenths(board, body_line_px(board));
+        assert!(
+            line >= READER_LINE_FLOOR,
+            "{}: a line of body text is {} on a {}-ppi reader, under the {} \
+             floor the firmware reaches",
+            board.name,
+            mm(line),
+            board.ppi().unwrap_or(0),
+            mm(READER_LINE_FLOOR)
+        );
+    }
+}
+
 /// The type has to fit the chrome that contains it, or a row's label overprints
 /// the row below and a hint runs into the panel edge.
 #[test]
@@ -151,6 +184,13 @@ fn the_type_fits_the_chrome_it_is_painted_into() {
             board.name,
             board.tokens.list_row_height
         );
+        // A band of zero is a board that draws no hints at all — its Back and
+        // Confirm come from the touchscreen, so there is no row of keys to
+        // label. Nothing is painted there, so there is nothing to fit; the
+        // check would otherwise read a missing band as one that is too small.
+        if board.tokens.button_hints_height == 0 {
+            continue;
+        }
         assert!(
             Font::ui_small().line_height() <= board.tokens.button_hints_height,
             "{}: the hint band is {}px and its type is {}px",

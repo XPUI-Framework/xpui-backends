@@ -1,15 +1,15 @@
 //! Painting: every primitive `xpui` asks a backend for, on a `DrawTarget`.
 
-use embedded_graphics::mono_font::MonoTextStyle;
 use embedded_graphics::prelude::*;
 use embedded_graphics::primitives::{Line, PrimitiveStyle};
-use embedded_graphics::text::{Baseline, Text as EgText};
+use u8g2_fonts::types::{FontColor, VerticalPosition};
 
 use xpui::host::{Canvas, FontId, FontStyle, IconRef};
 use xpui::{Point, Rect, Size};
 
 use crate::backend::Backend;
 use crate::clip::{EgPoint, to_eg_rect, with_clip};
+use crate::fonts;
 
 impl<D: DrawTarget> Backend<D> {
     fn colour(&self, ink: bool) -> D::Color {
@@ -66,20 +66,50 @@ impl<D: DrawTarget> Canvas for Backend<D> {
         let _ = frame.display.clear(background);
     }
 
+    /// Text from its top-left, which is the convention the whole framework
+    /// lays out with — a UI test resolves tap targets from the same origin.
+    ///
+    /// u8g2 draws from a baseline, so the origin is converted through
+    /// [`fonts::baseline_offset`], which is chosen so every glyph in the face
+    /// lands inside `[y, y + line_height)`.
+    ///
+    /// Painted piece by piece through [`fonts::pieces`] — the same walk
+    /// [`fonts::text_width`] measures with, so what lands on the panel occupies
+    /// exactly what was reserved for it. A string the face can draw whole is
+    /// one piece and one call, which is every ordinary label.
     fn draw_text(&self, origin: Point, text: &str, font: FontId, style: FontStyle) {
-        let Some(face) = self.fonts.face(font, style) else {
-            return;
-        };
-        let colour = self.palette.ink;
+        let resolved = self.fonts().face(font, style);
+        let colour = FontColor::Transparent(self.palette.ink);
+        let ink = self.palette.ink;
+        let mut pen = origin.x;
         let mut frame = self.frame.borrow_mut();
-        let text_style = MonoTextStyle::new(face, colour);
-        let label = EgText::with_baseline(
-            text,
-            EgPoint::new(origin.x, origin.y),
-            text_style,
-            Baseline::Top,
-        );
-        with_clip!(frame, |target| label.draw(target));
+
+        fonts::pieces(resolved, text, |piece| {
+            match piece {
+                fonts::Piece::Run { face, text } => {
+                    let baseline = EgPoint::new(pen, origin.y + fonts::baseline_offset(face));
+                    with_clip!(frame, |target| face.render(
+                        text,
+                        baseline,
+                        VerticalPosition::Baseline,
+                        colour,
+                        target
+                    ));
+                }
+                // Nothing in the chain has the character. A hollow box says so,
+                // sitting on the baseline where the glyph would have been — a
+                // label with a visible box in it reads as a missing glyph,
+                // where one that silently drops a character reads as the wrong
+                // words.
+                fonts::Piece::Marker { width, height } => {
+                    let baseline = origin.y + fonts::baseline_offset(resolved.renderer());
+                    let area = Rect::new(pen, baseline - height, width, height);
+                    let outline = to_eg_rect(area).into_styled(PrimitiveStyle::with_stroke(ink, 1));
+                    with_clip!(frame, |target| outline.draw(target));
+                }
+            }
+            pen += fonts::advance(piece);
+        });
     }
 
     fn fill_rect(&self, rect: Rect, black: bool) {

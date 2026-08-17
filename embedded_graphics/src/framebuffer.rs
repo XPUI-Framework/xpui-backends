@@ -277,7 +277,11 @@ impl Framebuffer {
 /// `env!("CARGO_TARGET_TMPDIR")` to [`Framebuffer::write_bmp_in`] instead.
 /// That variable is set at compile time and does point inside the workspace's
 /// target directory.
-fn screenshot_dir() -> PathBuf {
+///
+/// Public so anything else that writes a frame for a person to look at — a
+/// simulator's screenshot key — puts it in the same place rather than
+/// inventing a second convention.
+pub fn screenshot_dir() -> PathBuf {
     match std::env::var("XPUI_SCREENSHOT_DIR") {
         Ok(dir) => PathBuf::from(dir),
         Err(_) => PathBuf::from("target/screenshots"),

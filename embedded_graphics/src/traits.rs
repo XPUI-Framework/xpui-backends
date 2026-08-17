@@ -7,23 +7,24 @@ use xpui::host::{Clock, FontId, FontRole, FontStyle, InputSource, TextMetrics};
 use xpui::{Button, Point, SwipeDir};
 
 use crate::backend::Backend;
-use crate::fonts::{self, Fonts};
+use crate::fonts;
 
 impl<D: DrawTarget> TextMetrics for Backend<D> {
     fn font(&self, role: FontRole) -> FontId {
-        Fonts::id(role)
+        self.fonts().id(role)
     }
 
     fn text_width(&self, font: FontId, text: &str, style: FontStyle) -> i32 {
-        self.fonts
-            .face(font, style)
-            .map_or(0, |face| fonts::text_width(face, text))
+        fonts::text_width(self.fonts().face(font, style), text)
     }
 
+    /// The tier's own band, which is its tallest style.
+    ///
+    /// Not the regular face's height: this is asked without a style, and a
+    /// bold taller than its regular would then paint outside the band it was
+    /// given. See [`Tier::line_height`](crate::Tier::line_height).
     fn line_height(&self, font: FontId) -> i32 {
-        self.fonts
-            .face(font, FontStyle::Regular)
-            .map_or(0, fonts::line_height)
+        self.fonts().face(font, FontStyle::Regular).tier.line_height
     }
 }
 

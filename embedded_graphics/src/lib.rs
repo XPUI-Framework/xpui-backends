@@ -85,13 +85,23 @@ pub mod screenshot;
 mod traits;
 
 pub use backend::Backend;
-pub use fonts::Fonts;
+pub use fonts::{
+    Face, Family, Fonts, HELVETICA, Piece, Tier, advance, clear_chosen_family, font_id, pieces,
+    request_family,
+};
 #[cfg(feature = "framebuffer")]
 pub use framebuffer::Framebuffer;
 pub use input::InputState;
 pub use palette::Palette;
 #[cfg(feature = "framebuffer")]
 pub use screenshot::assert_screenshot;
+/// The typefaces, re-exported so a caller can assemble a [`Family`] of its own
+/// without adding a second dependency on `u8g2-fonts` and keeping the two
+/// versions in step.
+///
+/// `Font` is among them because [`font_tier!`](crate::font_tier) names it: the
+/// macro reads each face's bytes to derive that tier's id.
+pub use u8g2_fonts::{Font, FontRenderer, fonts as u8g2};
 pub use xpui_boards::Board;
 pub use xpui_chrome::Tokens;
 

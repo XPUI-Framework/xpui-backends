@@ -214,15 +214,132 @@ fn text_width_grows_with_the_text() {
 
 /// Measured in characters, not bytes, or every accented word comes out wider
 /// than it is painted.
+///
+/// The faces are proportional, so this is three of the *same* glyph rather
+/// than three arbitrary ones: `é` is two bytes, and a width counted from
+/// `len()` would come back six advances wide.
 #[test]
 fn text_width_counts_characters_not_bytes() {
     let backend = backend();
     let font = backend.font(FontRole::Ui);
+    let one = backend.text_width(font, "é", FontStyle::Regular);
 
+    assert!(one > 0, "the face has an accented glyph to measure");
     assert_eq!(
         backend.text_width(font, "ééé", FontStyle::Regular),
-        backend.text_width(font, "abc", FontStyle::Regular),
-        "three characters measure the same however many bytes they take"
+        one * 3,
+        "three characters are three advances, however many bytes they take"
+    );
+}
+
+/// Accented Latin renders as itself. The mono faces this backend used to carry
+/// covered 7-bit ASCII and drew a replacement glyph for everything else, so a
+/// Portuguese label came out peppered with `?`.
+///
+/// Both halves matter: that the accent is *drawn*, and that it is drawn where
+/// it was measured. A backend whose fallback glyph was a different width would
+/// pass the first and fail the second.
+#[test]
+fn accented_latin_draws_as_itself_and_inside_its_own_measurement() {
+    let plain = backend();
+    let font = plain.font(FontRole::Ui);
+    let height = plain.line_height(font);
+    plain.draw_text(Point::new(4, 4), "e", font, FontStyle::Regular);
+    let e = plain.with_display(|d| d.ink_count());
+
+    let backend = backend();
+    let width = backend.text_width(font, "é", FontStyle::Regular);
+    backend.draw_text(Point::new(4, 4), "é", font, FontStyle::Regular);
+    let accented = backend.with_display(|d| d.ink_count());
+
+    assert!(
+        accented > e,
+        "`é` drew {accented} pixels against `e`'s {e} — the accent is missing"
+    );
+    assert_eq!(
+        backend.with_display(|d| d.ink_in(4, 4, width, height)),
+        accented,
+        "and every pixel of it landed inside the measured box"
+    );
+}
+
+/// Every glyph every face can draw has to land inside the box the framework
+/// was told about, or a row's accents print into the row above it.
+///
+/// Vertically this is exact: the line box is `[y, y + line_height)` and
+/// nothing may leave it, which is the whole reason the baseline is placed off
+/// the font's bounding box rather than off its ascent. Anchoring on the ascent
+/// — what `embedded-graphics`' `Baseline::Top` does — passes for `Hello` and
+/// pushes `Á` four rows up.
+///
+/// Horizontally a glyph may sit a little outside its own advance: that is side
+/// bearing, and `©` and `î` in these faces use it. The tolerance is named and
+/// small, so a face that overhangs by more than a hair still fails.
+#[test]
+fn every_glyph_lands_inside_the_box_it_was_measured_into() {
+    const SIDE_BEARING: i32 = 2;
+    const ORIGIN: i32 = 8;
+
+    for role in [FontRole::Ui, FontRole::UiSmall, FontRole::Reader] {
+        for style in [FontStyle::Regular, FontStyle::Bold] {
+            for code in (0x20..=0x7eu32).chain(0xa0..=0xff) {
+                let character = char::from_u32(code).expect("Latin-1 is all characters");
+                let mut text = String::new();
+                text.push(character);
+
+                let backend = backend();
+                let font = backend.font(role);
+                let width = backend.text_width(font, &text, style);
+                let height = backend.line_height(font);
+                backend.draw_text(Point::new(ORIGIN, ORIGIN), &text, font, style);
+
+                let ink = read(&backend, |d| d.ink_count());
+                if ink == 0 {
+                    continue; // a space, or a glyph this face does not carry
+                }
+                assert_eq!(
+                    read(&backend, |d| d.ink_in(0, ORIGIN, WIDTH, height)),
+                    ink,
+                    "{role:?} {style:?} {character:?} (U+{code:04X}) drew outside \
+                     the {height}px line it was measured into"
+                );
+                assert_eq!(
+                    read(&backend, |d| d.ink_in(
+                        ORIGIN - SIDE_BEARING,
+                        0,
+                        width + SIDE_BEARING * 2,
+                        HEIGHT
+                    )),
+                    ink,
+                    "{role:?} {style:?} {character:?} (U+{code:04X}) drew more than \
+                     {SIDE_BEARING}px outside the {width}px it advances"
+                );
+            }
+        }
+    }
+}
+
+/// A sub-header asks for `ui_small().bold()`, and it has to arrive in a face
+/// that is actually bold. The old set had no bold under 6x13 and answered with
+/// the regular one, so every group heading on this backend was body text.
+#[test]
+fn the_small_bold_face_puts_down_more_ink_than_the_regular() {
+    let word = "Display";
+    let font = backend().font(FontRole::UiSmall);
+
+    let regular = backend();
+    regular.draw_text(Point::new(2, 2), word, font, FontStyle::Regular);
+    let light = regular.with_display(|d| d.ink_count());
+
+    let bold = backend();
+    bold.draw_text(Point::new(2, 2), word, font, FontStyle::Bold);
+    let heavy = bold.with_display(|d| d.ink_count());
+
+    assert!(light > 0, "the regular face drew something");
+    assert!(
+        heavy > light,
+        "bold drew {heavy} pixels against regular's {light} — the same face \
+         under two names"
     );
 }
 
@@ -326,10 +443,11 @@ fn asking_for_a_repaint_marks_the_backend_dirty() {
 /// bound — a `text_width` returning ten times the truth passes it. This pins it
 /// from the other side.
 ///
-/// Not to the pixel: a monospaced cell carries side bearing, so the last column
-/// of the last glyph is legitimately blank. The tight property is that the
-/// width is exactly one character's advance more than the same string without
-/// its last character, and that the shorter box really does lose that glyph.
+/// Not to the pixel: a glyph carries side bearing, so the last column of the
+/// last one is legitimately blank. The tight property is that the width grows
+/// by exactly the dropped glyph's own advance — these faces are proportional,
+/// so that is `o`'s and not any other letter's — and that the shorter box
+/// really does lose that glyph.
 #[test]
 fn the_measured_width_is_tight_not_merely_generous() {
     let backend = backend();
@@ -338,7 +456,7 @@ fn the_measured_width_is_tight_not_merely_generous() {
 
     let full = backend.text_width(font, "Hello", FontStyle::Regular);
     let short = backend.text_width(font, "Hell", FontStyle::Regular);
-    let advance = backend.text_width(font, "H", FontStyle::Regular);
+    let advance = backend.text_width(font, "o", FontStyle::Regular);
     assert_eq!(
         full - short,
         advance,

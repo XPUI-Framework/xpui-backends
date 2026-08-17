@@ -8,7 +8,7 @@ use xpui::{Button, Point, Rect, SwipeDir};
 use xpui_boards::Board;
 use xpui_chrome::Tokens;
 
-use crate::fonts::Fonts;
+use crate::fonts::{Family, Fonts};
 use crate::input::InputState;
 use crate::palette::Palette;
 
@@ -24,7 +24,13 @@ pub(crate) struct Frame<D> {
 pub struct Backend<D: DrawTarget> {
     pub(crate) frame: RefCell<Frame<D>>,
     pub(crate) palette: Palette<D::Color>,
-    pub(crate) fonts: Fonts,
+    /// The type this backend is set in.
+    ///
+    /// A `Cell` because it can change while the thing is running — a font
+    /// picker is a screen like any other, and by the time one is on screen the
+    /// backend is behind a `&'static`. `Fonts` is four words and `Copy`, so
+    /// this costs a move rather than a lock.
+    fonts: Cell<Fonts>,
     /// The chrome this backend paints with.
     ///
     /// Per backend rather than a global, because the whole point of the board
@@ -70,7 +76,7 @@ impl<D: DrawTarget> Backend<D> {
                 input: InputState::default(),
             }),
             palette,
-            fonts: Fonts::DEFAULT,
+            fonts: Cell::new(Fonts::DEFAULT),
             tokens: Tokens::DEFAULT,
             millis: Cell::new(0),
             dirty: Cell::new(true),
@@ -108,9 +114,49 @@ impl<D: DrawTarget> Backend<D> {
         self
     }
 
-    pub fn with_fonts(mut self, fonts: Fonts) -> Self {
-        self.fonts = fonts;
+    pub fn with_fonts(self, fonts: Fonts) -> Self {
+        self.fonts.set(fonts);
         self
+    }
+
+    /// The type this backend is currently set in.
+    pub fn fonts(&self) -> Fonts {
+        self.fonts.get()
+    }
+
+    /// The chrome this backend paints with.
+    pub fn tokens(&self) -> &Tokens {
+        &self.tokens
+    }
+
+    /// Sets the type in another family, and asks for a repaint.
+    ///
+    /// **The sizes are re-derived from the chrome, not carried over.** Each
+    /// role keeps the line height this board's tokens called for and the new
+    /// family answers with the tier it was cut in — so a family with a coarser
+    /// ladder still lands inside the rows that were laid out, rather than
+    /// inheriting the previous family's heights and overflowing them.
+    ///
+    /// **This replaces a [`Fonts`] given to [`with_fonts`](Backend::with_fonts).**
+    /// The sizes come from the tokens, so a caller that hand-picked its own
+    /// gets the chrome's back. That is the point — a swap must not carry sizes
+    /// into a family that was never measured for them — but it means
+    /// `with_fonts` is for a backend nothing will re-set.
+    ///
+    /// Every id every role reports changes with it, because an id is a hash of
+    /// the bytes behind it. Anything keyed on one — a cached page layout, a
+    /// measured column — is invalidated by that alone, with nobody having to
+    /// remember to say so.
+    pub fn set_family(&self, family: &'static Family) {
+        self.fonts
+            .set(Fonts::for_tokens(&self.tokens).with_family(family));
+        // Both flags, because they answer to different readers. `dirty` is for
+        // a caller driving its own loop; `request_update` is what `App`
+        // consults, and setting only the first leaves a panel painted in the
+        // face that has just been replaced — on e-ink, until something else
+        // happens to change.
+        self.dirty.set(true);
+        xpui::host::request_update();
     }
 
     /// Leaks the backend so it can be installed.
@@ -136,7 +182,21 @@ impl<D: DrawTarget> Backend<D> {
     }
 
     /// Starts a frame: advances the clock and clears one-frame input.
+    ///
+    /// A family a screen asked for lands here, which is the one moment it can
+    /// safely: between frames, before anything has been measured against the
+    /// type it is about to replace.
     pub fn begin_frame(&self, millis: u32) {
+        // Reconciled rather than consumed: every backend catches up to the
+        // application's choice as it opens a frame, so switching to one that
+        // was built before the choice was made does not silently undo it.
+        // Compared by address, or this would set the family — and ask for a
+        // repaint — on every frame forever.
+        if let Some(family) = crate::fonts::chosen_family()
+            && !core::ptr::eq(family, self.fonts.get().family)
+        {
+            self.set_family(family);
+        }
         self.millis.set(millis);
         self.frame.borrow_mut().input.begin_frame();
     }
