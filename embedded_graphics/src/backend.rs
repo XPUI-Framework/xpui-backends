@@ -78,12 +78,19 @@ impl<D: DrawTarget> Backend<D> {
         }
     }
 
-    /// A backend sized for a board: its chrome, and its palette.
+    /// A backend sized for a board: its chrome, its type, and its palette.
     ///
     /// The same `Board` the simulator reads, so a screen laid out in a window
     /// and the same screen on the hardware measure against identical numbers.
+    ///
+    /// The board's tokens carry its UI scale, and the faces are chosen to fit
+    /// those tokens — so a board that asks for finger-sized chrome gets type to
+    /// match it, and a 296x128 strip does not get a face taller than its own
+    /// hint band.
     pub fn for_board(display: D, board: Board, palette: Palette<D::Color>) -> Self {
-        let mut backend = Backend::new(display, palette).with_tokens(board.tokens);
+        let mut backend = Backend::new(display, palette)
+            .with_tokens(board.tokens)
+            .with_fonts(Fonts::for_tokens(&board.tokens));
         backend.board = Some(board);
         backend
     }
