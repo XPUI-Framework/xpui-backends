@@ -11,7 +11,7 @@ use std::sync::{Mutex, MutexGuard};
 use xpui::Point;
 use xpui::host::{Canvas, IconRef};
 use xpui_chrome::Icon;
-use xpui_eg::{Backend, Framebuffer, Palette};
+use xpui_eg::{Backend, Framebuffer, Palette, assert_screenshot};
 
 /// The installed host is process-wide, so these take turns.
 static SERIAL: Mutex<()> = Mutex::new(());
@@ -144,8 +144,13 @@ fn no_two_icons_are_the_same_picture() {
     }
 }
 
-/// A sheet of every icon at three sizes, written out to be looked at. Numbers
-/// cannot tell you whether a gear looks like a gear.
+/// A sheet of every icon at three sizes, held against a golden.
+///
+/// Numbers cannot tell you whether a gear looks like a gear, so the sheet
+/// exists to be looked at — but it is also compared, because a sheet nobody
+/// compares is a sheet that can change without anyone noticing. This used to
+/// assert only that the file had been written, which is a thing that cannot
+/// fail.
 #[test]
 fn the_icon_sheet() {
     let _guard = serial();
@@ -174,6 +179,5 @@ fn the_icon_sheet() {
         }
     }
 
-    let path = backend.with_display(|frame| frame.write_bmp_in(screenshots(), "icons"));
-    assert!(path.exists(), "the sheet was written to {}", path.display());
+    backend.with_display(|frame| assert_screenshot("icons", frame));
 }
