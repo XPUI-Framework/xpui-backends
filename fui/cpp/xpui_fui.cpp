@@ -825,6 +825,19 @@ uint8_t xpui_fui_option_popup_row_rect(const uint8_t* title, const int32_t count
 // (freeink::ui::present(display, hint) is the SDK's one-liner for that).
 __attribute__((weak)) void xpui_fui_present(void) {}
 
-void xpui_fui_request_update(void) { xpui_fui_present(); }
+// Set by xpui_fui_set_present. Preferred over overriding the weak symbol above,
+// because whether an override wins depends on the object format and the
+// failure is silent: a panel that never updates.
+static void (*g_present)(void) = 0;
+
+void xpui_fui_set_present(void (*present)(void)) { g_present = present; }
+
+void xpui_fui_request_update(void) {
+  if (g_present) {
+    g_present();
+    return;
+  }
+  xpui_fui_present();
+}
 
 }  // extern "C"

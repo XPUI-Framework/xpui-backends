@@ -185,12 +185,21 @@ void xpui_fui_request_update(void);
 // Where an implementation that owns only a framebuffer hands off to the panel.
 //
 // `xpui_fui.cpp` draws into memory and has no display driver, so it defines
-// this as a weak no-op and calls it from `xpui_fui_request_update`. A firmware
-// overrides it with its own definition — push the framebuffer, trigger the
-// waveform — and the linker prefers the strong symbol. An implementation that
-// already talks to a panel can ignore this and drive it from
-// `xpui_fui_request_update` directly.
+// this as a weak no-op and calls it from `xpui_fui_request_update`. An
+// implementation that already talks to a panel can ignore it and drive the
+// display from `xpui_fui_request_update` directly.
 void xpui_fui_present(void);
+
+// Installs the function `xpui_fui_request_update` calls to push a frame.
+//
+// Prefer this to overriding the weak `xpui_fui_present`. Overriding depends on
+// how a particular linker resolves a strong definition against a weak one,
+// which differs between object formats and is easy to get silently wrong: the
+// symptom is a panel that never updates, with nothing to point at. A pointer
+// set at startup behaves the same everywhere.
+//
+// Passing NULL restores the weak default.
+void xpui_fui_set_present(void (*present)(void));
 
 #ifdef __cplusplus
 }  // extern "C"
