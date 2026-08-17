@@ -6,7 +6,19 @@
 //! image can show any of that. This one records *pixels*, and is an image
 //! because no text can show those without throwing most of them away.
 //!
-//! ```rust,ignore
+//! `no_run` because it installs the process-wide host and writes a golden when
+//! one does not exist yet, neither of which belongs in a documentation build:
+//!
+//! ```rust,no_run
+//! # use xpui::{App, NavigationScreen, Screen, Text, View, vstack};
+//! # use xpui_eg::{Backend, Framebuffer, Palette, assert_screenshot};
+//! # struct MyScreen;
+//! # impl MyScreen { fn new() -> Self { MyScreen } }
+//! # impl Screen for MyScreen {
+//! #     type Message = ();
+//! #     fn body(&self) -> impl View<()> { NavigationScreen::new(vstack![0; Text::new("hello")]) }
+//! #     fn update(&mut self, _message: ()) {}
+//! # }
 //! let backend = Backend::leak(Framebuffer::new(480, 800), Palette::INK_IS_ON);
 //! unsafe { xpui::host::install(backend) };
 //! App::new(MyScreen::new()).render();

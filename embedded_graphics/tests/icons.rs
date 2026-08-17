@@ -5,7 +5,6 @@
 //! them. These pin the fix, and the sheet at the end is there to be *looked*
 //! at — a glyph can pass every numeric assertion and still be a smudge.
 
-use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard};
 
 use xpui::Point;
@@ -35,10 +34,6 @@ fn backend(width: i32, height: i32) -> &'static Backend<Framebuffer> {
     // Safety: serialised by `SERIAL`; nothing has rendered on this backend.
     unsafe { xpui::host::install(backend) };
     backend
-}
-
-fn screenshots() -> PathBuf {
-    PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("../screenshots")
 }
 
 /// Every icon must draw *something*. One that silently draws nothing is worse

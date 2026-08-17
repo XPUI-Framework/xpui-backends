@@ -5,7 +5,20 @@
 //! assert on the result — which is what makes screenshot tests possible in
 //! ordinary `cargo test`.
 //!
-//! ```rust,ignore
+//! `no_run` because it installs the process-wide host and writes a golden when
+//! one does not exist yet, neither of which belongs in a documentation build:
+//!
+//! ```rust,no_run
+//! # use embedded_graphics::pixelcolor::BinaryColor::{Off, On};
+//! # use xpui::{App, NavigationScreen, Screen, Text, View, vstack};
+//! # use xpui_eg::{Backend, Framebuffer, Palette, assert_screenshot};
+//! # struct MyScreen;
+//! # impl MyScreen { fn new() -> Self { MyScreen } }
+//! # impl Screen for MyScreen {
+//! #     type Message = ();
+//! #     fn body(&self) -> impl View<()> { NavigationScreen::new(vstack![0; Text::new("hello")]) }
+//! #     fn update(&mut self, _message: ()) {}
+//! # }
 //! let backend = Backend::leak(Framebuffer::new(480, 800), Palette::new(On, Off));
 //! unsafe { xpui::host::install(backend) };
 //! App::new(MyScreen::new()).render();
