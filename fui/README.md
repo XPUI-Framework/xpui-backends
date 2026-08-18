@@ -18,12 +18,12 @@ pixels. That is the whole reason to sit on it rather than beside it.
 and `cpp/xpui_fui.cpp` defines them. All three move together, and a mismatch is
 a link error at best and a corrupt call frame at worst.
 
-`ffi_symbols_agree()` in `build-and-test.sh` checks that every **name** exists
-in every place it is written down — the header, the Rust declarations, the shim
-and the host doubles. **It does not check types.** Two parameters swapped still
-links, because C has no mangling to disagree with, and the symptom is a
-rendering fault somewhere unrelated. That is what
-[spec 07](../../../docs/specs/07-ffi-checker.md) is for.
+`tests/abi.rs` parses this header and every Rust file that declares or defines
+its symbols, and compares **signatures** — not just names. Two parameters
+swapped still link, because C has no mangling to disagree with, and the symptom
+is a rendering fault somewhere unrelated; that is the failure it exists for.
+`ffi_symbols_agree()` in `build-and-test.sh` covers the half it cannot read:
+this header against the C++ that defines it.
 
 The boundary runs both ways: `cpp/xpui_screen.h` declares six lifecycle entry
 points that `src/lifecycle.rs` **defines**, so a C++ host can drive a Rust
