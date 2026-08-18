@@ -55,9 +55,17 @@ impl<D: DrawTarget> Backend<D> {
 }
 
 impl<D: DrawTarget> Canvas for Backend<D> {
+    /// The panel's size, remembered rather than asked for.
+    ///
+    /// Captured once from the display, so it still answers while the display
+    /// is on loan for a present. A layout measured against zero collapses
+    /// silently, and this is called from inside every `body()`.
+    ///
+    /// Two consequences of asking once: a target that could resize would go
+    /// stale here — none in this workspace can — and `Backend::new` now calls
+    /// `bounding_box()` during construction, which it did not before.
     fn screen_size(&self) -> Size {
-        let bounds = self.frame.with_ref(|frame| frame.display.bounding_box());
-        Size::new(bounds.size.width as i32, bounds.size.height as i32)
+        self.frame.with_ref(|frame| frame.size)
     }
 
     fn clear(&self) {
@@ -65,7 +73,9 @@ impl<D: DrawTarget> Canvas for Backend<D> {
         // Straight through, ignoring the clip: clearing is a whole-screen act,
         // and the framework only calls it before anything else is drawn.
         self.frame.with(|frame| {
-            let _ = frame.display.clear(background);
+            if let Some(display) = frame.display.as_mut() {
+                let _ = display.clear(background);
+            }
         });
     }
 

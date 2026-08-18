@@ -75,6 +75,7 @@ extern crate alloc;
 mod backend;
 mod canvas;
 mod clip;
+mod display;
 mod fonts;
 #[cfg(feature = "framebuffer")]
 pub mod framebuffer;
@@ -86,6 +87,7 @@ pub mod screenshot;
 mod traits;
 
 pub use backend::Backend;
+pub use display::DisplayLoan;
 pub use fonts::{
     Face, Family, Fonts, HELVETICA, Piece, Tier, advance, clear_chosen_family, font_id, pieces,
     request_family,

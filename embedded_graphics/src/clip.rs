@@ -31,21 +31,30 @@ impl<D: DrawTarget> Backend<D> {
 ///
 /// A macro rather than a function because the two arms have different target
 /// types and `DrawTarget` is not object-safe.
+///
+/// **Draws nothing while the display is on loan.** `Backend::loan_display`
+/// takes it out so a caller can flush it across an `await`, and this is the one
+/// place that has to know: a paint arriving in that window is discarded, which
+/// is the cost the loan pays for holding no borrow.
 macro_rules! with_clip {
-    ($frame:expr, |$target:ident| $body:expr) => {
-        match $frame.clip {
-            Some(clip) => {
-                let area = $crate::clip::to_eg_rect(clip);
-                let mut clipped = $frame.display.clipped(&area);
-                let $target = &mut clipped;
-                let _ = $body;
-            }
-            None => {
-                let $target = &mut $frame.display;
-                let _ = $body;
+    ($frame:expr, |$target:ident| $body:expr) => {{
+        // Read before the display is borrowed, or the two borrows overlap.
+        let clip = $frame.clip;
+        if let Some(display) = $frame.display.as_mut() {
+            match clip {
+                Some(clip) => {
+                    let area = $crate::clip::to_eg_rect(clip);
+                    let mut clipped = display.clipped(&area);
+                    let $target = &mut clipped;
+                    let _ = $body;
+                }
+                None => {
+                    let $target = display;
+                    let _ = $body;
+                }
             }
         }
-    };
+    }};
 }
 
 pub(crate) use with_clip;

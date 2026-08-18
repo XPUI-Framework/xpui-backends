@@ -4,7 +4,7 @@
 use core::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 use embedded_graphics::prelude::*;
-use xpui::{Button, Point, Rect, SwipeDir};
+use xpui::{Button, Point, Rect, Size, SwipeDir};
 use xpui_boards::Board;
 use xpui_chrome::Tokens;
 
@@ -15,7 +15,13 @@ use crate::palette::Palette;
 
 /// Everything the backend mutates while a frame runs.
 pub(crate) struct Frame<D> {
-    pub(crate) display: D,
+    /// `None` while the display is on loan — see [`Backend::loan_display`].
+    /// Every paint arriving in that window is discarded.
+    pub(crate) display: Option<D>,
+    /// The panel's size, captured once so it can still be answered while the
+    /// display is out. Layout asks for it constantly and a zero would collapse
+    /// every measurement silently.
+    pub(crate) size: Size,
     /// Drawing outside this is discarded. `None` means the whole panel.
     pub(crate) clip: Option<Rect>,
     pub(crate) input: InputState,
@@ -102,9 +108,11 @@ const _: () = {
 
 impl<D: DrawTarget> Backend<D> {
     pub fn new(display: D, palette: Palette<D::Color>) -> Self {
+        let bounds = display.bounding_box();
         Backend {
             frame: Guarded::new(Frame {
-                display,
+                display: Some(display),
+                size: Size::new(bounds.size.width as i32, bounds.size.height as i32),
                 clip: None,
                 input: InputState::default(),
             }),
@@ -284,14 +292,5 @@ impl<D: DrawTarget> Backend<D> {
 
     pub fn clear_dirty(&self) {
         self.dirty.store(false, Ordering::Relaxed);
-    }
-
-    /// Borrows the display, for pushing the framebuffer to a panel.
-    ///
-    /// Same rule as [`input`](Backend::input): the closure holds this
-    /// backend's state, so it must not draw through the backend while inside.
-    /// Flush the panel, read the pixels, return.
-    pub fn with_display<R>(&self, body: impl FnOnce(&mut D) -> R) -> R {
-        self.frame.with(|frame| body(&mut frame.display))
     }
 }
