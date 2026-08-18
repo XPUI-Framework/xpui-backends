@@ -48,25 +48,57 @@ target_include_directories(firmware PRIVATE
 Two calls at startup, one symbol to define.
 
 ```cpp
+#include <stdint.h>
+
 #include "xpui_fui.h"
 
 // 1 bit per pixel, MSB first, (width + 7) / 8 bytes per row, a SET bit is
-// WHITE. Must stay valid for as long as anything draws.
-xpui_fui_attach(display.getFrameBuffer(), 480, 800);
+// WHITE. Must stay valid for as long as anything draws — a static, or
+// whatever your panel driver already owns.
+static uint8_t framebuffer[(480 + 7) / 8 * 800];
+
+void wire_up_the_panel(void) { xpui_fui_attach(framebuffer, 480, 800); }
 ```
 
 Coordinates are logical: the framebuffer you hand over is already in the frame
 the UI lays out in, so rotate on the way to the glass, not on the way in.
 
-`xpui_fui_request_update` calls `xpui_fui_present`, a weak no-op — this file
-owns a framebuffer, not a display driver. Define it and it becomes the panel
-refresh:
+`xpui_fui_request_update` pushes the frame through whichever of two mechanisms
+you chose. **Prefer the hook**: whether a strong definition beats a weak one
+depends on the object format, and the failure is silent — a panel that never
+updates.
 
 ```cpp
-extern "C" void xpui_fui_present(void) {
-  freeink::ui::present(display, freeink::ui::RefreshHint::Fast);
-}
+#include "xpui_fui.h"
+
+namespace {
+
+// Raised here, acted on after the frame. **Do not blit in this function**:
+// `xpui_fui_request_update` is called from inside the input phase, before
+// anything has been painted, so a present here pushes the previous frame.
+bool g_updateRequested = false;
+
+void present() { g_updateRequested = true; }
+
+}  // namespace
+
+void install_the_present_hook(void) { xpui_fui_set_present(&present); }
 ```
+
+Then, once the frame has been rendered, push it:
+
+```text
+freeink::ui::present(display, freeink::ui::RefreshHint::Fast);
+```
+
+Fenced `text` rather than `cpp` because it cannot be compiled here: the SDK
+guards its panel helpers behind `__has_include(<EInkDisplay.h>)`, which is
+absent on a host, and `present` takes an `EInkDisplay&` rather than the
+`DisplayTarget` this shim draws through. It compiles in a firmware and nowhere
+else.
+
+Overriding the weak `xpui_fui_present` still works, and `examples/cpp_host`
+proves it does on this linker — but the hook behaves the same everywhere.
 
 ## What this build does not ship
 

@@ -11,7 +11,10 @@ authors.workspace = true
 repository.workspace = true
 # The C++ half has to reach a consuming firmware's build, so it ships with the
 # crate rather than only living in the repository.
-include = ["src/**", "cpp/**", "README.md"]
+# `docs/**` is not optional: `src/lib.rs` pulls the tutorial in with
+# `include_str!`, so a package without it does not compile at `cargo package`'s
+# verify step.
+include = ["src/**", "cpp/**", "docs/**", "README.md"]
 
 [lib]
 name = "xpui_fui"

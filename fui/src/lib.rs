@@ -98,4 +98,6 @@ pub type Context = *mut c_void;
 mod guides {
     #[doc = include_str!("../README.md")]
     pub mod readme {}
+    #[doc = include_str!("../docs/tutorial.md")]
+    pub mod tutorial {}
 }
