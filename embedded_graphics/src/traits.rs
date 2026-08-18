@@ -30,53 +30,56 @@ impl<D: DrawTarget> TextMetrics for Backend<D> {
 
 impl<D: DrawTarget> InputSource for Backend<D> {
     fn was_pressed(&self, button: Button) -> bool {
-        self.frame.borrow().input.was_pressed(button)
+        self.frame.with_ref(|frame| frame.input.was_pressed(button))
     }
 
     fn is_pressed(&self, button: Button) -> bool {
-        self.frame.borrow().input.is_pressed(button)
+        self.frame.with_ref(|frame| frame.input.is_pressed(button))
     }
 
     fn was_released(&self, button: Button) -> bool {
-        self.frame.borrow().input.was_released(button)
+        self.frame
+            .with_ref(|frame| frame.input.was_released(button))
     }
 
     fn has_touch(&self) -> bool {
-        self.frame.borrow().input.has_touch()
+        self.frame.with_ref(|frame| frame.input.has_touch())
     }
 
     fn tap(&self) -> Option<Point> {
-        self.frame.borrow().input.tap_at()
+        self.frame.with_ref(|frame| frame.input.tap_at())
     }
 
     fn touch_held(&self) -> Option<Point> {
-        self.frame.borrow().input.touch_held()
+        self.frame.with_ref(|frame| frame.input.touch_held())
     }
 
     fn touch_released(&self) -> bool {
-        self.frame.borrow().input.touch_was_released()
+        self.frame
+            .with_ref(|frame| frame.input.touch_was_released())
     }
 
     fn swipe(&self) -> SwipeDir {
-        self.frame.borrow().input.swipe_direction()
+        self.frame.with_ref(|frame| frame.input.swipe_direction())
     }
 
     fn was_back_gesture(&self) -> bool {
-        self.frame.borrow().input.was_back_gesture()
+        self.frame.with_ref(|frame| frame.input.was_back_gesture())
     }
 
     fn was_home_gesture(&self) -> bool {
-        self.frame.borrow().input.was_home_gesture()
+        self.frame.with_ref(|frame| frame.input.was_home_gesture())
     }
 
     fn swipe_moves_selection(&self) -> bool {
-        self.frame.borrow().input.swipe_moves_selection
+        self.frame
+            .with_ref(|frame| frame.input.swipe_moves_selection)
     }
 }
 
 impl<D: DrawTarget> Clock for Backend<D> {
     fn millis(&self) -> u32 {
-        self.millis.get()
+        self.millis.load(core::sync::atomic::Ordering::Relaxed)
     }
 }
 
@@ -86,7 +89,7 @@ xpui_chrome::plain_chrome! {
     // The backend's own tokens, not a global: two backends in one process may
     // be driving two different panels.
     tokens: |backend| &backend.tokens,
-    request_update: |backend| backend.dirty.set(true),
+    request_update: |backend| backend.dirty.store(true, core::sync::atomic::Ordering::Relaxed),
 }
 
 /// Lets `xpui`'s UI harness feed this backend input.

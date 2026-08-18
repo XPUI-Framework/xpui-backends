@@ -78,6 +78,7 @@ mod clip;
 mod fonts;
 #[cfg(feature = "framebuffer")]
 pub mod framebuffer;
+mod guarded;
 mod input;
 mod palette;
 #[cfg(feature = "framebuffer")]

@@ -32,6 +32,16 @@ u8g2-fonts = "0.8"
 # writes are committed.
 png = { version = "0.18", optional = true }
 
+# What makes `Backend` genuinely `Sync` rather than claiming to be. See
+# `src/guarded.rs`.
+#
+# **No `-impl` feature, and never one.** A binary must have exactly one
+# implementation of `critical-section` — the acquire symbol is process-wide —
+# so a *library* that supplies one breaks every downstream that already has
+# its own. This depends on the API alone; `examples/rp2040` gets the
+# implementation from `embassy-rp`.
+critical-section = { version = "1.2", optional = true }
+
 [features]
 # A host-side framebuffer and the screenshot goldens taken from it.
 # `std` only: it reads and writes files.
@@ -40,7 +50,16 @@ framebuffer = ["dep:png"]
 # is why it is a feature rather than always on: a firmware should not carry the
 # test doubles.
 testing = ["xpui/testing"]
+# Guards this backend's state with a critical section, which is what a host
+# that paints on a second task needs. Off by default: a desktop simulator and a
+# single-threaded bare-metal loop do not want interrupts masked on every text
+# measurement, and that is every consumer of the default.
+critical-section = ["dep:critical-section"]
 
 [dev-dependencies]
 xpui = { workspace = true, features = ["testing"] }
 xpui-embedded-graphics = { path = ".", features = ["framebuffer", "testing"] }
+# An implementation, for the host, so a threaded test genuinely serialises
+# rather than link-erroring on the acquire symbol. A **dev**-dependency: this
+# is the one place a library may supply one, because a test binary is a binary.
+critical-section = { version = "1.2", features = ["std"] }

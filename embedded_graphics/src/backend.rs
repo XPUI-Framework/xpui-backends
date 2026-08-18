@@ -1,7 +1,7 @@
 //! The backend itself: what it holds while a frame runs, and how a caller
 //! builds, drives and feeds one.
 
-use core::cell::{Cell, RefCell};
+use core::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 use embedded_graphics::prelude::*;
 use xpui::{Button, Point, Rect, SwipeDir};
@@ -9,6 +9,7 @@ use xpui_boards::Board;
 use xpui_chrome::Tokens;
 
 use crate::fonts::{Family, Fonts};
+use crate::guarded::Guarded;
 use crate::input::InputState;
 use crate::palette::Palette;
 
@@ -22,64 +23,96 @@ pub(crate) struct Frame<D> {
 
 /// An `xpui` host over an `embedded-graphics` display.
 pub struct Backend<D: DrawTarget> {
-    pub(crate) frame: RefCell<Frame<D>>,
+    pub(crate) frame: Guarded<Frame<D>>,
     pub(crate) palette: Palette<D::Color>,
     /// The type this backend is set in.
     ///
-    /// A `Cell` because it can change while the thing is running — a font
-    /// picker is a screen like any other, and by the time one is on screen the
-    /// backend is behind a `&'static`. `Fonts` is four words and `Copy`, so
-    /// this costs a move rather than a lock.
-    fonts: Cell<Fonts>,
+    /// Guarded rather than a `Cell` because it can change while the thing is
+    /// running — a font picker is a screen like any other, and by the time one
+    /// is on screen the backend is behind a `&'static`. Four words is too wide
+    /// to be an atomic, so a torn read is possible without the guard.
+    fonts: Guarded<Fonts>,
     /// The chrome this backend paints with.
     ///
     /// Per backend rather than a global, because the whole point of the board
     /// presets is that a 296x128 panel and a 480x800 one need different
     /// numbers — and a process can drive both, as the screenshot tests do.
     pub(crate) tokens: Tokens,
-    pub(crate) millis: Cell<u32>,
+    /// Atomics rather than `Cell`s, and no guard: a load and a store are all
+    /// either needs, and Cortex-M0+ has both. What it does **not** have is
+    /// compare-and-swap, so nothing here may become a read-modify-write.
+    pub(crate) millis: AtomicU32,
     /// Set whenever the framework asks for a repaint, so a caller driving its
     /// own loop can tell whether pushing pixels is worth it.
-    pub(crate) dirty: Cell<bool>,
+    pub(crate) dirty: AtomicBool,
     /// The board this was built for, when it was built from one. A frame loop
     /// needs `refresh_ms` to decide how often polling is worth it, and without
     /// this it has to keep a second copy that can drift from the first.
     board: Option<Board>,
 }
 
-// Safety: **this backend must be driven from one thread.** Not a style note —
-// the consequence of breaking it is undefined behaviour, not a clean error.
+// With the `critical-section` feature there is **no `unsafe impl` here at
+// all**: `Guarded` is a `critical_section::Mutex`, the two counters are
+// atomics, and the compiler works `Sync` out for itself. Nothing is claimed,
+// so nothing can be claimed wrongly.
+//
+// Safety: without that feature, **this backend must be driven from one
+// thread.** Not a style note — the consequence of breaking it is undefined
+// behaviour, not a clean error.
 //
 // `xpui` requires `Host: Sync` because a firmware may paint on a second task
 // (see `xpui::screen::Screen::body`), and this claim is what satisfies that
-// bound. But the state below sits behind a `RefCell`, whose borrow flag is a
+// bound. But `Guarded` is then a bare `RefCell`, whose borrow flag is a
 // non-atomic counter: two threads can both take `borrow_mut` and end up with
-// aliasing `&mut D`. The friendlier outcome is a "already borrowed" panic,
+// aliasing `&mut D`. The friendlier outcome is an "already borrowed" panic,
 // which under this workspace's `panic = "abort"` takes the firmware down.
 //
 // So: a desktop simulator, or a bare-metal loop that ticks and paints in one
-// place, is fine — that is every consumer today. A host that renders on its
-// own task must not use this type; it should implement `Host` over whatever
-// synchronisation it already has, which is what the FreeInkUI backend does.
+// place, is fine — that is every consumer of the default. A host that renders
+// on its own task must turn the feature on. `examples/rp2040` turns it on
+// without being one: it is a single executor task, and the reason there is
+// that an interrupt handler could plausibly reach the backend.
 //
 // `D: Send` because sharing a `&Backend<D>` is only meaningful if `D` itself
 // could have moved between threads; without it a `D` holding an `Rc` would be
 // smuggled across one.
+#[cfg(not(feature = "critical-section"))]
 unsafe impl<D: DrawTarget + Send> Sync for Backend<D> {}
+
+// And with the feature on, that the compiler agrees — here, rather than two
+// crates away at a use site.
+//
+// Without this, adding an unguarded `Cell` to `Backend` still compiles: the
+// library never names `Sync` itself, so the error surfaces only where a
+// backend is installed or shared. That is exactly how the bug this feature
+// fixes arose — three `Cell`s crept in under one `unsafe impl` and nothing
+// local objected.
+#[cfg(feature = "critical-section")]
+const _: () = {
+    // The supertrait is the assertion: an `impl` of it is only accepted if
+    // `Backend<D>` really is `Sync`, and that is checked here rather than at
+    // a call, so nothing has to be invoked for it to bite.
+    //
+    // Never used, and that is the point — it exists to be compiled, not
+    // called.
+    #[expect(dead_code, reason = "a compile-time assertion has no callers")]
+    trait IsSync: Sync {}
+    impl<D: DrawTarget + Send> IsSync for Backend<D> where D::Color: Sync {}
+};
 
 impl<D: DrawTarget> Backend<D> {
     pub fn new(display: D, palette: Palette<D::Color>) -> Self {
         Backend {
-            frame: RefCell::new(Frame {
+            frame: Guarded::new(Frame {
                 display,
                 clip: None,
                 input: InputState::default(),
             }),
             palette,
-            fonts: Cell::new(Fonts::DEFAULT),
+            fonts: Guarded::new(Fonts::DEFAULT),
             tokens: Tokens::DEFAULT,
-            millis: Cell::new(0),
-            dirty: Cell::new(true),
+            millis: AtomicU32::new(0),
+            dirty: AtomicBool::new(true),
             board: None,
         }
     }
@@ -115,13 +148,13 @@ impl<D: DrawTarget> Backend<D> {
     }
 
     pub fn with_fonts(self, fonts: Fonts) -> Self {
-        self.fonts.set(fonts);
+        self.fonts.with(|current| *current = fonts);
         self
     }
 
     /// The type this backend is currently set in.
     pub fn fonts(&self) -> Fonts {
-        self.fonts.get()
+        self.fonts.with(|fonts| *fonts)
     }
 
     /// The chrome this backend paints with.
@@ -148,14 +181,17 @@ impl<D: DrawTarget> Backend<D> {
     /// measured column — is invalidated by that alone, with nobody having to
     /// remember to say so.
     pub fn set_family(&self, family: &'static Family) {
-        self.fonts
-            .set(Fonts::for_tokens(&self.tokens).with_family(family));
+        let next = Fonts::for_tokens(&self.tokens).with_family(family);
+        self.fonts.with(|fonts| *fonts = next);
         // Both flags, because they answer to different readers. `dirty` is for
         // a caller driving its own loop; `request_update` is what `App`
         // consults, and setting only the first leaves a panel painted in the
         // face that has just been replaced — on e-ink, until something else
         // happens to change.
-        self.dirty.set(true);
+        // Set before `request_update`, which reaches this same backend
+        // through the installed host — and does so without a guard held,
+        // because `dirty` is an atomic rather than guarded state.
+        self.dirty.store(true, Ordering::Relaxed);
         xpui::host::request_update();
     }
 
@@ -192,13 +228,17 @@ impl<D: DrawTarget> Backend<D> {
         // was built before the choice was made does not silently undo it.
         // Compared by address, or this would set the family — and ask for a
         // repaint — on every frame forever.
+        //
+        // Read, then set, as two separate guarded calls: `set_family` takes
+        // the same guard, and taking it while it is held would panic.
+        let current = self.fonts.with(|fonts| fonts.family);
         if let Some(family) = crate::fonts::chosen_family()
-            && !core::ptr::eq(family, self.fonts.get().family)
+            && !core::ptr::eq(family, current)
         {
             self.set_family(family);
         }
-        self.millis.set(millis);
-        self.frame.borrow_mut().input.begin_frame();
+        self.millis.store(millis, Ordering::Relaxed);
+        self.frame.with(|frame| frame.input.begin_frame());
     }
 
     /// Feeds the frame, for a caller that has its own event source.
@@ -207,7 +247,7 @@ impl<D: DrawTarget> Backend<D> {
     /// call back into the backend — no drawing, no `screen_size`. Feed input
     /// and return.
     pub fn input(&self, feed: impl FnOnce(&mut InputState)) {
-        feed(&mut self.frame.borrow_mut().input);
+        self.frame.with(|frame| feed(&mut frame.input));
     }
 
     pub fn press(&self, button: Button) {
@@ -228,13 +268,22 @@ impl<D: DrawTarget> Backend<D> {
 
     /// Whether the framework has asked for a repaint since [`clear_dirty`].
     ///
+    /// **Not a test-and-clear, and it cannot be made one.** A caller that
+    /// writes `if is_dirty() { clear_dirty(); paint(); }` loses any
+    /// `request_update` landing between the two, and on e-ink a lost repaint
+    /// means a stale panel until the user presses something. Closing that
+    /// needs an atomic swap, which Cortex-M0+ does not have — the same
+    /// constraint that made these flags plain load-and-store in the first
+    /// place. Clear it *after* painting, as [`App::render_if_dirty`] does.
+    ///
     /// [`clear_dirty`]: Backend::clear_dirty
+    /// [`App::render_if_dirty`]: xpui::App::render_if_dirty
     pub fn is_dirty(&self) -> bool {
-        self.dirty.get()
+        self.dirty.load(Ordering::Relaxed)
     }
 
     pub fn clear_dirty(&self) {
-        self.dirty.set(false);
+        self.dirty.store(false, Ordering::Relaxed);
     }
 
     /// Borrows the display, for pushing the framebuffer to a panel.
@@ -243,6 +292,6 @@ impl<D: DrawTarget> Backend<D> {
     /// backend's state, so it must not draw through the backend while inside.
     /// Flush the panel, read the pixels, return.
     pub fn with_display<R>(&self, body: impl FnOnce(&mut D) -> R) -> R {
-        body(&mut self.frame.borrow_mut().display)
+        self.frame.with(|frame| body(&mut frame.display))
     }
 }
