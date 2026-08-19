@@ -81,6 +81,7 @@ mod fonts;
 pub mod framebuffer;
 mod guarded;
 mod input;
+mod paced_fill;
 mod palette;
 #[cfg(feature = "framebuffer")]
 pub mod screenshot;
@@ -95,6 +96,7 @@ pub use fonts::{
 #[cfg(feature = "framebuffer")]
 pub use framebuffer::Framebuffer;
 pub use input::InputState;
+pub use paced_fill::PacedFill;
 pub use palette::Palette;
 #[cfg(feature = "framebuffer")]
 pub use screenshot::assert_screenshot;
