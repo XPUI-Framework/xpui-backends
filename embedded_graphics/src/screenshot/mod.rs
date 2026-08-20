@@ -57,6 +57,34 @@ const DIR: &str = "tests/screenshots";
 /// On a mismatch it prints an ASCII view of what changed and writes a
 /// side-by-side image to `target/diff/<name>.png`.
 pub fn assert_screenshot(name: &str, frame: &Framebuffer) {
+    if let Err(report) = check_screenshot(name, frame) {
+        panic!("{report}");
+    }
+}
+
+/// The same comparison, as a `Result`.
+///
+/// For a caller capturing many frames in one test: it can gather what every
+/// one of them said and report them together, where [`assert_screenshot`]
+/// would stop at the first. `Err` holds the whole report, ready to print —
+/// the same text the assertion would have panicked with.
+///
+/// A caller that wants one frame checked should use [`assert_screenshot`],
+/// which puts the failure where it happened.
+///
+/// A `String` rather than an error type, against this crate's habit: the
+/// `Err` is a finished report — a pixel count, a bounding box, two ASCII views
+/// and a path — and its only use is to be printed. There is nothing in it a
+/// caller could match on.
+///
+/// It still panics rather than returning `Err` when the harness itself is
+/// broken: a golden that reads but does not decode, or one that cannot be
+/// written — no directory to put it in, or a file that will not take it.
+/// Neither is a screen having changed, and gathering them into a report of
+/// what moved would file them under the wrong heading. A golden that cannot be
+/// *opened* is not one of these — that is indistinguishable from one that is
+/// not there yet, and takes the same path as a new capture.
+pub fn check_screenshot(name: &str, frame: &Framebuffer) -> Result<(), String> {
     let path = path_for(name);
     let existing = fs::read(&path).ok();
 
@@ -71,13 +99,13 @@ pub fn assert_screenshot(name: &str, frame: &Framebuffer) {
         // A golden that did not exist is now whatever the code happens to do,
         // which proves nothing. Say so rather than passing quietly.
         if existing.is_none() && !updating() {
-            panic!(
+            return Err(format!(
                 "screenshot `{name}` did not exist and has been written to {}.\n\
                  Open it, confirm it is what the screen should look like, then re-run.",
                 path.display()
-            );
+            ));
         }
-        return;
+        return Ok(());
     }
 
     let bytes = existing.expect("checked above");
@@ -85,7 +113,7 @@ pub fn assert_screenshot(name: &str, frame: &Framebuffer) {
         .unwrap_or_else(|e| panic!("{} is not a readable png: {e}", path.display()));
 
     if expected.width != frame.width || expected.height != frame.height {
-        panic!(
+        return Err(format!(
             "screenshot `{name}` is {}x{} but {} holds {}x{}.\n\
              If this change is intended, re-run with UPDATE_SNAPSHOTS=1.",
             frame.width,
@@ -93,18 +121,15 @@ pub fn assert_screenshot(name: &str, frame: &Framebuffer) {
             path.display(),
             expected.width,
             expected.height
-        );
+        ));
     }
 
     let Some(difference) = difference(&expected, frame) else {
-        return;
+        return Ok(());
     };
 
     let image = write_diff_image(name, &expected, frame, &difference);
-    panic!(
-        "{}",
-        report(name, &path, &expected, frame, &difference, &image)
-    );
+    Err(report(name, &path, &expected, frame, &difference, &image))
 }
 
 fn path_for(name: &str) -> PathBuf {
@@ -122,7 +147,83 @@ fn updating() -> bool {
 mod tests {
     use super::compare::{Difference, difference};
     use super::report::{diff_image, difference_map};
+    use super::{check_screenshot, path_for, updating};
     use crate::framebuffer::Framebuffer;
+
+    /// A golden of its own, committed beside the crate's screens, so the
+    /// comparison itself is exercised against a file on disk rather than only
+    /// in memory.
+    const PROBE: &str = "check_screenshot_probe";
+
+    /// What `PROBE` holds: a shape with ink in both halves, so a flipped pixel
+    /// can be put somewhere the encoder is not already writing.
+    fn probe_frame() -> Framebuffer {
+        let mut frame = Framebuffer::new(32, 24);
+        for x in 4..28 {
+            frame.pixels[6 * 32 + x] = true;
+            frame.pixels[17 * 32 + x] = true;
+        }
+        frame
+    }
+
+    /// **The line the rest of this repository stands on.**
+    ///
+    /// Every pixel assertion in this repository is this function returning
+    /// `Err`: seventy-five of them, being the gallery's sixty-three board
+    /// captures and three families, this crate's own seven — the eighth golden
+    /// beside them is this test's probe — and the tutorial's two.
+    ///
+    /// Replace its last two lines with `Ok(())` and the whole suite still
+    /// passes while nothing is compared at all, which is the one failure this
+    /// technique cannot survive. So it is checked here, on a golden kept for
+    /// the purpose.
+    #[test]
+    fn a_frame_that_differs_from_its_golden_comes_back_as_an_error() {
+        // `UPDATE_SNAPSHOTS` means "rewrite, do not compare", so under it there
+        // is no comparison to make and the second half would overwrite the
+        // probe with the wrong picture. The gate runs `cargo test` without it.
+        if updating() {
+            return;
+        }
+
+        let frame = probe_frame();
+        assert!(
+            check_screenshot(PROBE, &frame).is_ok(),
+            "the committed {PROBE}.png is not what `probe_frame` paints, so \
+             neither half of this test means anything"
+        );
+
+        let mut moved = probe_frame();
+        moved.pixels[17 * 32 + 15] = false;
+
+        let report = check_screenshot(PROBE, &moved)
+            .expect_err("one pixel was flipped and the comparison said nothing");
+        assert!(
+            report.contains(PROBE),
+            "the report does not name the golden it is about: {report}"
+        );
+        assert!(
+            report.contains("1 of 768 pixels differ"),
+            "the report does not say what moved: {report}"
+        );
+    }
+
+    /// And the golden it reads is the one its name points at, rather than
+    /// whatever the working directory happened to be.
+    #[test]
+    fn a_golden_lives_under_the_crate_being_tested() {
+        let path = path_for(PROBE);
+        assert!(
+            path.ends_with("tests/screenshots/check_screenshot_probe.png"),
+            "{}",
+            path.display()
+        );
+        assert!(
+            path.starts_with(env!("CARGO_MANIFEST_DIR")),
+            "a golden was resolved outside the crate under test: {}",
+            path.display()
+        );
+    }
 
     fn pair() -> (Framebuffer, Framebuffer) {
         let mut expected = Framebuffer::new(64, 64);

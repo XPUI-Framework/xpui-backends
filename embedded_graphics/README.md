@@ -134,6 +134,15 @@ side.
 
 That is how this crate's own tests work — see `tests/screenshots.rs`.
 
+`check_screenshot` is the same comparison handing back its report as
+`Result<(), String>` rather than panicking with it, for a test that captures
+many frames and wants to name every one that moved rather than stopping at the
+first. A broken harness — a golden that will not decode, a directory that will
+not take a file — still panics through either of them.
+[`examples/gallery`](../../../examples/gallery/) renders nine screens on seven
+boards that way, so one token moved by one pixel names every board it reached
+rather than the first.
+
 `write_bmp` and `thumbnail` are still there, and are for looking at a frame
 rather than asserting on one. Nothing compares them.
 

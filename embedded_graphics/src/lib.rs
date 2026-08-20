@@ -99,7 +99,7 @@ pub use input::InputState;
 pub use paced_fill::PacedFill;
 pub use palette::Palette;
 #[cfg(feature = "framebuffer")]
-pub use screenshot::assert_screenshot;
+pub use screenshot::{assert_screenshot, check_screenshot};
 /// The typefaces, re-exported so a caller can assemble a [`Family`] of its own
 /// without adding a second dependency on `u8g2-fonts` and keeping the two
 /// versions in step.
