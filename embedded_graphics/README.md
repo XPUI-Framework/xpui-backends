@@ -47,7 +47,8 @@ while app.is_running() {
 ```
 
 It supplies `Canvas` and `TextMetrics` itself, `InputSource` and `Clock` from
-whatever you feed it, and takes `Chrome` from
+whatever you feed it — bar `has_left_right_keys`, which it reads off the board
+it was built for — and takes `Chrome` from
 [`xpui-chrome`](../chrome/) — so a list, a dialog and a slider look like
 something without you drawing one.
 

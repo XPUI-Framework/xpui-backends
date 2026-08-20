@@ -46,6 +46,18 @@ impl<D: DrawTarget> InputSource for Backend<D> {
         self.frame.with_ref(|frame| frame.input.has_touch())
     }
 
+    /// Taken from the board, which lists every key and what it sends, rather
+    /// than from the frame: this describes the device and does not change
+    /// between one frame and the next.
+    ///
+    /// A backend built by [`Backend::new`](crate::Backend::new) has no board
+    /// and answers `false` — see
+    /// [`Board::has_left_right_keys`](xpui_boards::Board::has_left_right_keys).
+    fn has_left_right_keys(&self) -> bool {
+        self.board()
+            .is_some_and(|board| board.has_left_right_keys())
+    }
+
     fn tap(&self) -> Option<Point> {
         self.frame.with_ref(|frame| frame.input.tap_at())
     }

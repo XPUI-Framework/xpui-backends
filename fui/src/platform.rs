@@ -14,6 +14,24 @@ pub trait Platform: Sync {
     fn is_pressed(&self, button: Button) -> bool;
     fn was_released(&self, button: Button) -> bool;
 
+    /// See [`InputSource::has_left_right_keys`](xpui::host::InputSource::has_left_right_keys).
+    ///
+    /// **Required, unlike everything below it**, because no answer is safe to
+    /// inherit. A firmware that said nothing would leave a value control
+    /// guessing, and the wrong guess is either a control no key can change or a
+    /// mode a reader never needed. Only the firmware knows which keys its
+    /// device carries.
+    ///
+    /// `xpui-boards` has the answer for every board described there, as
+    /// `Board::has_left_right_keys` — worth checking against, because a
+    /// firmware and that crate describing the same device differently is a
+    /// disagreement nothing here can detect. This crate does not depend on it.
+    fn has_left_right_keys(&self) -> bool;
+
+    /// Whether *this frame* carries a touch — not whether the device has a
+    /// touchscreen. See
+    /// [`InputSource::has_touch`](xpui::host::InputSource::has_touch); the
+    /// method above is the one that describes the hardware.
     fn has_touch(&self) -> bool {
         false
     }
@@ -55,6 +73,9 @@ impl Platform for NoInput {
         false
     }
     fn was_released(&self, _button: Button) -> bool {
+        false
+    }
+    fn has_left_right_keys(&self) -> bool {
         false
     }
 }

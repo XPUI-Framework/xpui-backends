@@ -47,6 +47,7 @@ implement the same ABI itself instead — that is a supported path, not a fork.
 #     fn was_pressed(&self, _button: Button) -> bool { false }
 #     fn is_pressed(&self, _button: Button) -> bool { false }
 #     fn was_released(&self, _button: Button) -> bool { false }
+#     fn has_left_right_keys(&self) -> bool { false }
 # }
 # let mut framebuffer = [0u8; 480 * 800 / 8];
 // Once, with the panel's framebuffer.
@@ -82,12 +83,22 @@ impl Platform for MyPlatform {
     fn was_pressed(&self, button: Button) -> bool { my_input().pressed(button) }
     fn is_pressed(&self, button: Button) -> bool { my_input().held(button) }
     fn was_released(&self, button: Button) -> bool { my_input().released(button) }
+    // Does this device carry Left and Right? Read it off the board rather
+    // than inferring it from the shape of the device — `Board::X3` does and
+    // `Board::X4_PRO` does not, and both are readers.
+    fn has_left_right_keys(&self) -> bool { true }
 }
 ```
 
-Those four are the whole obligation: touch and the gestures default to "nothing
+Those five are the whole obligation: touch and the gestures default to "nothing
 happened", so a button-only device implements no more than this. `NoInput`
-implements exactly those four and nothing else, for a panel that only displays.
+implements exactly those five and nothing else, for a panel that only displays.
+
+`has_left_right_keys` is the only one of the five that asks about the device
+rather than about this frame, and the only method below `was_released` without a
+default, because there is no answer that is safe to inherit.
+[`src/platform.rs`](src/platform.rs) says why, and points at `xpui-boards` for
+the answer each board gives.
 
 ## The distinctions that break things quietly
 

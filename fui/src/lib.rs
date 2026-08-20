@@ -37,6 +37,7 @@
 //! #     fn was_pressed(&self, _button: Button) -> bool { false }
 //! #     fn is_pressed(&self, _button: Button) -> bool { false }
 //! #     fn was_released(&self, _button: Button) -> bool { false }
+//! #     fn has_left_right_keys(&self) -> bool { false }
 //! # }
 //! # let mut framebuffer = [0u8; 480 * 800 / 8];
 //! // Once, with the panel's framebuffer.

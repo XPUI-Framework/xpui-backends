@@ -50,6 +50,10 @@ impl<P: Platform> InputSource for Backend<P> {
         self.platform.has_touch()
     }
 
+    fn has_left_right_keys(&self) -> bool {
+        self.platform.has_left_right_keys()
+    }
+
     fn tap(&self) -> Option<Point> {
         self.platform.tap()
     }
