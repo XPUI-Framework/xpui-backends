@@ -22,6 +22,9 @@ struct Counting {
     draw_iter: usize,
     /// Colours actually consumed, which is how a fill of the wrong size shows.
     pixels: usize,
+    /// Where the last fill was asked for. A count alone cannot tell a fill in
+    /// the right place from one six pixels to the right.
+    area: Option<Rectangle>,
 }
 
 impl Dimensions for Counting {
@@ -48,6 +51,7 @@ impl DrawTarget for Counting {
         I: IntoIterator<Item = Self::Color>,
     {
         self.fill_contiguous += 1;
+        self.area = Some(*area);
         // Exactly the area's worth, and no more. `PacedFill` hands over an
         // unbounded `repeat`, so a `count()` here would never return — which is
         // itself the contract every `fill_contiguous` already owes.
@@ -56,8 +60,9 @@ impl DrawTarget for Counting {
         Ok(())
     }
 
-    fn fill_solid(&mut self, _area: &Rectangle, _color: Self::Color) -> Result<(), Self::Error> {
+    fn fill_solid(&mut self, area: &Rectangle, _color: Self::Color) -> Result<(), Self::Error> {
         self.fill_solid += 1;
+        self.area = Some(*area);
         Ok(())
     }
 }
@@ -76,6 +81,11 @@ fn a_solid_fill_never_reaches_the_display() {
     );
     assert_eq!(inner.fill_contiguous, 1, "it went out as a contiguous fill");
     assert_eq!(inner.pixels, 12, "one colour per pixel of a 4x3 area");
+    assert_eq!(
+        inner.area,
+        Some(area),
+        "and over the rectangle it was asked for, not one nearby"
+    );
 }
 
 /// And so is a clear, which the trait would otherwise route around the wrapper.
@@ -88,6 +98,11 @@ fn clearing_never_reaches_the_display_either() {
     assert_eq!(inner.fill_solid, 0, "clear must not take the shortcut");
     assert_eq!(inner.fill_contiguous, 1);
     assert_eq!(inner.pixels, 32, "the whole 8x4 bounding box");
+    assert_eq!(
+        inner.area,
+        Some(Rectangle::new(Point::zero(), Size::new(8, 4))),
+        "a clear covers the display, exactly"
+    );
 }
 
 /// The other two are forwarded untouched: pacing a path that already sends a

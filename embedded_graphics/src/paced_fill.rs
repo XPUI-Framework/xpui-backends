@@ -48,6 +48,7 @@ use embedded_graphics::primitives::Rectangle;
 pub struct PacedFill<D>(D);
 
 impl<D> PacedFill<D> {
+    /// Wraps a display so its solid fills go out a pixel at a time.
     pub fn new(display: D) -> Self {
         PacedFill(display)
     }
@@ -90,8 +91,13 @@ impl<D: DrawTarget> DrawTarget for PacedFill<D> {
         self.0.fill_contiguous(area, core::iter::repeat(color))
     }
 
-    /// Not inherited, because the default body is `fill_solid` on the *inner*
-    /// display's bounding box — which would route straight back around this.
+    /// Redundant with the trait default today, and kept anyway.
+    ///
+    /// The default is `self.fill_solid(&self.bounding_box(), color)`, and
+    /// `self` is this wrapper — so it already lands on the override above.
+    /// Written out so that a change to the default cannot quietly route a
+    /// clear around the pacing, and because the mistake that is easy to make
+    /// here is forwarding to the inner display, which the tests do catch.
     fn clear(&mut self, color: Self::Color) -> Result<(), Self::Error> {
         let area = self.bounding_box();
         self.fill_solid(&area, color)
