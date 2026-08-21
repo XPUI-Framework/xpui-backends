@@ -169,9 +169,9 @@ mod tests {
     /// **The line the rest of this repository stands on.**
     ///
     /// Every pixel assertion in this repository is this function returning
-    /// `Err`: seventy-five of them, being the gallery's sixty-three board
-    /// captures and three families, this crate's own seven — the eighth golden
-    /// beside them is this test's probe — and the tutorial's two.
+    /// `Err`: eighty-two of them, being the gallery's seventy board captures
+    /// and three families, this crate's own seven — the eighth golden beside
+    /// them is this test's probe — and the tutorial's two.
     ///
     /// Replace its last two lines with `Ok(())` and the whole suite still
     /// passes while nothing is compared at all, which is the one failure this

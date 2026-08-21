@@ -75,9 +75,13 @@ unsafe extern "C" {
     );
     pub fn xpui_fui_draw_button_hints(
         back: *const u8,
+        back_word: i32,
         confirm: *const u8,
+        confirm_word: i32,
         previous: *const u8,
+        previous_word: i32,
         next: *const u8,
+        next_word: i32,
     );
     pub safe fn xpui_fui_draw_progress_bar(
         x: i32,
@@ -87,7 +91,15 @@ unsafe extern "C" {
         current: u32,
         total: u32,
     );
-    pub safe fn xpui_fui_draw_slider(x: i32, y: i32, w: i32, h: i32, value: i32, max: i32);
+    pub safe fn xpui_fui_draw_slider(
+        x: i32,
+        y: i32,
+        w: i32,
+        h: i32,
+        value: i32,
+        max: i32,
+        state: i32,
+    );
     pub safe fn xpui_fui_draw_scroll_indicator(
         x: i32,
         y: i32,

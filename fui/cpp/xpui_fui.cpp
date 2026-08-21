@@ -576,8 +576,24 @@ void xpui_fui_draw_sub_header(const int32_t x, const int32_t y, const int32_t w,
   canvas.target().text(line, asText(label), labelStyle);
 }
 
-void xpui_fui_draw_button_hints(const uint8_t* back, const uint8_t* confirm, const uint8_t* previous,
-                                const uint8_t* next) {
+// The words the four usual labels have no room for. English here because
+// something has to be; a firmware with a string table answers from it instead.
+static const char* modeWord(const int32_t word, const char* usual) {
+  switch (word) {
+    case 1:
+      return "Edit";
+    case 2:
+      return "Done";
+    case 3:
+      return "Cancel";
+    default:
+      return usual;
+  }
+}
+
+void xpui_fui_draw_button_hints(const uint8_t* back, const int32_t back_word, const uint8_t* confirm,
+                                const int32_t confirm_word, const uint8_t* previous, const int32_t previous_word,
+                                const uint8_t* next, const int32_t next_word) {
   if (!attached()) return;
   const fui::ThemeTokens& tokens = theme();
 
@@ -585,10 +601,10 @@ void xpui_fui_draw_button_hints(const uint8_t* back, const uint8_t* confirm, con
   // the ABI names them. A firmware that lets the user remap its front buttons
   // reorders the four arguments on the way in.
   const char* labels[4] = {
-      hintLabel(back, "Back"),
-      hintLabel(confirm, "Select"),
-      hintLabel(previous, "Up"),
-      hintLabel(next, "Down"),
+      hintLabel(back, modeWord(back_word, "Back")),
+      hintLabel(confirm, modeWord(confirm_word, "Select")),
+      hintLabel(previous, modeWord(previous_word, "Up")),
+      hintLabel(next, modeWord(next_word, "Down")),
   };
 
   Canvas canvas;
@@ -634,7 +650,7 @@ void xpui_fui_draw_progress_bar(const int32_t x, const int32_t y, const int32_t 
 }
 
 void xpui_fui_draw_slider(const int32_t x, const int32_t y, const int32_t w, const int32_t h, const int32_t value,
-                          const int32_t max) {
+                          const int32_t max, const int32_t state) {
   if (!attached()) return;
 
   Canvas canvas;
@@ -647,10 +663,30 @@ void xpui_fui_draw_slider(const int32_t x, const int32_t y, const int32_t w, con
   props.value = value;
   props.max = max;
   // xpui declared this slider's touch region and routes the drag itself, so the
-  // component only draws. Everything else stays at the defaults xpui_fui_metric
-  // reports back for SliderKnob*/SliderSideInset.
+  // component only draws. The geometry stays at the defaults xpui_fui_metric
+  // reports back for SliderKnob*/SliderSideInset; only the two paints below
+  // are overridden.
   props.action = fui::NO_ACTION;
-  fui::slider(frame, canvas.place(x, y, w, h), props);
+
+  // 1 focused, 2 open for editing.
+  //
+  // **The knob carries it**, matching what `xpui-chrome`'s `draw_slider` paints
+  // so a screen does not change appearance when it moves between backends —
+  // that function's own comment is where the choice is argued. `fui::slider`
+  // fills the knob with `props.knob` and outlines it with `props.border`, which
+  // is the one hook this needs.
+  props.knob = state == 0 ? fui::Paint::solid(fui::Color::White) : fui::Paint::dither(fui::Color::LightGray);
+  props.border = fui::Paint::solid(fui::Color::Black);
+
+  const fui::Rect bounds = canvas.place(x, y, w, h);
+  fui::slider(frame, bounds, props);
+
+  // An open control adds one outline, after the component has drawn: its knob
+  // already says the keys are here, and this says they are moving the value,
+  // which is the state that changes what four keys do.
+  if (state == 2) {
+    canvas.target().stroke(bounds, fui::Paint::solid(fui::Color::Black), 1);
+  }
 }
 
 void xpui_fui_draw_scroll_indicator(const int32_t x, const int32_t y, const int32_t w, const int32_t h,

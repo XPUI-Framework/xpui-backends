@@ -122,15 +122,28 @@ void xpui_fui_draw_sub_header(int32_t x, int32_t y, int32_t w, int32_t h, const 
 // The four hints, given by meaning rather than by screen position — the host
 // reorders them for the user's button layout.
 //
-// A NULL pointer means "your own standard label for this slot".
+// A NULL pointer means "a word of your own", and the `*_word` beside it says
+// which: 0 this slot's usual label, 1 Edit, 2 Done, 3 Cancel.
 // An EMPTY STRING means the screen asked for that slot to be blank.
 // These are different, and confusing them is the most likely bug in this file.
-void xpui_fui_draw_button_hints(const uint8_t* back, const uint8_t* confirm, const uint8_t* previous,
-                                const uint8_t* next);
+//
+// The three extra words exist because a value control on a device with no
+// Left/Right pair changes what the keys do, and the bar has to say so. They are
+// yours to translate, exactly as the four usual labels are — the framework does
+// not know what language the reader uses.
+void xpui_fui_draw_button_hints(const uint8_t* back, int32_t back_word, const uint8_t* confirm, int32_t confirm_word,
+                                const uint8_t* previous, int32_t previous_word, const uint8_t* next, int32_t next_word);
 
 void xpui_fui_draw_progress_bar(int32_t x, int32_t y, int32_t w, int32_t h, uint32_t current, uint32_t total);
 
-void xpui_fui_draw_slider(int32_t x, int32_t y, int32_t w, int32_t h, int32_t value, int32_t max);
+// `state` says what the keys will do to this control next, so a person can see
+// it: 0 idle, 1 focused, 2 open for editing — the same mode the three extra
+// hint words above describe.
+//
+// Draw 1 the way a focused list row is drawn, and 2 so it cannot be mistaken
+// for 1 — otherwise the mode is invisible and the refresh spent entering it
+// bought nothing.
+void xpui_fui_draw_slider(int32_t x, int32_t y, int32_t w, int32_t h, int32_t value, int32_t max, int32_t state);
 
 // The scroll indicator beside a scrolling region. Draw NOTHING when
 // content <= visible: a full-height bar says there is more to see when there

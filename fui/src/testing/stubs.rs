@@ -202,9 +202,13 @@ extern "C" fn xpui_fui_draw_sub_header(
 #[unsafe(no_mangle)]
 extern "C" fn xpui_fui_draw_button_hints(
     back: *const u8,
+    _back_word: i32,
     confirm: *const u8,
+    _confirm_word: i32,
     previous: *const u8,
+    _previous_word: i32,
     next: *const u8,
+    _next_word: i32,
 ) {
     record(Call::Hints([
         unsafe { borrow(back) },
@@ -227,7 +231,15 @@ extern "C" fn xpui_fui_draw_progress_bar(
 }
 
 #[unsafe(no_mangle)]
-extern "C" fn xpui_fui_draw_slider(_x: i32, _y: i32, _w: i32, _h: i32, value: i32, max: i32) {
+extern "C" fn xpui_fui_draw_slider(
+    _x: i32,
+    _y: i32,
+    _w: i32,
+    _h: i32,
+    value: i32,
+    max: i32,
+    _state: i32,
+) {
     record(Call::Slider { value, max });
 }
 

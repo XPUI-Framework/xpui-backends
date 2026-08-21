@@ -62,6 +62,7 @@ reason worth knowing before changing it.
 | **The dialog's border** | `defaultPopupStyles` is a white panel with no outline, which on a white page is no panel at all. The shim adds a one-pixel border; the dim behind the dialog is `xpui`'s own scrim. |
 | **The progress bar's track** | The component's default track is transparent, so an empty bar would be invisible. The shim paints a light dither under it. |
 | **Nothing registers a hit** | The list, the dialog and the slider are all handed `NO_ACTION`. `xpui` declared the touch rects before rendering and routes taps itself, so the components must draw and nothing more. |
+| **The slider's three states** | `SliderProps` carries paints and geometry and has no notion of focus. The shim sets `knob` and `border` from the `ControlState` it is handed — paper, then a dither once the keys are on the control — and strokes one rect around an open one. It matches what `xpui-chrome` paints, so a screen does not change appearance when it moves between backends. |
 
 ## What does not go through a component at all
 

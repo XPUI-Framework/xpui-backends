@@ -1,7 +1,7 @@
 //! The components FreeInkUI already knows how to draw.
 
 use xpui::Rect;
-use xpui::host::{Chrome, Hint, RowField, ThemeMetric};
+use xpui::host::{Chrome, ControlState, Hint, RowField, ThemeMetric};
 
 use crate::backend::Backend;
 use crate::cells::{Cells, cell_trampoline};
@@ -48,9 +48,13 @@ impl<P: Platform> Chrome for Backend<P> {
         unsafe {
             raw::xpui_fui_draw_button_hints(
                 ptr_of(&slots[0]),
+                back.word() as i32,
                 ptr_of(&slots[1]),
+                confirm.word() as i32,
                 ptr_of(&slots[2]),
+                previous.word() as i32,
                 ptr_of(&slots[3]),
+                next.word() as i32,
             )
         }
     }
@@ -66,8 +70,16 @@ impl<P: Platform> Chrome for Backend<P> {
         );
     }
 
-    fn draw_slider(&self, rect: Rect, value: i32, max: i32) {
-        raw::xpui_fui_draw_slider(rect.x(), rect.y(), rect.width(), rect.height(), value, max);
+    fn draw_slider(&self, rect: Rect, value: i32, max: i32, state: ControlState) {
+        raw::xpui_fui_draw_slider(
+            rect.x(),
+            rect.y(),
+            rect.width(),
+            rect.height(),
+            value,
+            max,
+            state as i32,
+        );
     }
 
     fn draw_scroll_indicator(&self, rect: Rect, content: i32, visible: i32, offset: i32) {
