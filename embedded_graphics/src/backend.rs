@@ -125,10 +125,16 @@ impl<D: DrawTarget> Backend<D> {
         }
     }
 
-    /// A backend sized for a board: its chrome, its type, and its palette.
+    /// A backend given a board's chrome, its type, and its palette.
     ///
     /// The same `Board` the simulator reads, so a screen laid out in a window
-    /// and the same screen on the hardware measure against identical numbers.
+    /// and the same screen on hardware get identical chrome.
+    ///
+    /// **The size is the display's, not the board's.** `Backend::new` measures
+    /// whatever `DrawTarget` it is handed and this changes nothing about that,
+    /// so a driver configured a quarter turn out reports a size the board never
+    /// described — which lays out plausibly and puts the screen in a corner of
+    /// the glass. A frame loop worth trusting prints both at boot.
     ///
     /// The board's tokens carry its UI scale, and the faces are chosen to fit
     /// those tokens — so a board that asks for finger-sized chrome gets type to

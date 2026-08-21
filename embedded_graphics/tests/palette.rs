@@ -7,7 +7,8 @@
 use std::sync::{Mutex, MutexGuard};
 
 use embedded_graphics::pixelcolor::BinaryColor;
-use xpui::{Rect, Renderer};
+use xpui::host::Canvas;
+use xpui::{Rect, Renderer, Size};
 use xpui_eg::{Backend, Framebuffer, Palette};
 
 /// These tests install a global host, so they cannot overlap. Without this two
@@ -72,5 +73,17 @@ fn a_board_backend_remembers_which_board_it_is() {
     assert_eq!(
         recorded.refresh_ms, badger.refresh_ms,
         "the loop reads its cadence from here"
+    );
+
+    // The board supplies chrome, not size.
+    assert_eq!(
+        backend.screen_size(),
+        Size::new(16, 16),
+        "the size is the display's, whatever the board says"
+    );
+    assert_ne!(
+        (badger.width, badger.height),
+        (16, 16),
+        "or this asserts nothing"
     );
 }
