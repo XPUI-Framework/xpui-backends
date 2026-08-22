@@ -31,3 +31,6 @@ xpui.workspace = true
 [dev-dependencies]
 xpui = { workspace = true, features = ["testing"] }
 xpui-fui = { path = ".", features = ["testing"] }
+# The signature comparison itself. A test-only dependency: the crate it checks
+# must not carry a checker into a firmware.
+xpui-abi-check.workspace = true
