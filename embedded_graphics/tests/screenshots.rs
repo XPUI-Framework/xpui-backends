@@ -22,8 +22,9 @@ use xpui::{
     App, Button, Hint, List, ListRow, Modal, NavigationScreen, ProgressBar, Scrim, ScrollView,
     Section, Slider, Stepper, Text, Toggle, View, hstack, vstack,
 };
-use xpui_eg::Framebuffer as TestDisplay;
-use xpui_eg::{Backend, Palette, assert_screenshot};
+use xpui_eg::{Backend, Palette};
+use xpui_screenshot::Framebuffer as TestDisplay;
+use xpui_screenshot::assert_screenshot;
 
 /// A portrait e-reader panel.
 const WIDTH: i32 = 480;

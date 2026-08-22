@@ -14,7 +14,8 @@
 use std::sync::{Mutex, MutexGuard};
 
 use xpui::Font;
-use xpui_eg::{Backend, Board, Framebuffer, Palette};
+use xpui_eg::{Backend, Board, Palette};
+use xpui_screenshot::Framebuffer;
 
 /// Floors, in tenths of a millimetre.
 ///

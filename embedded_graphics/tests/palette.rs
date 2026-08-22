@@ -9,7 +9,8 @@ use std::sync::{Mutex, MutexGuard};
 use embedded_graphics::pixelcolor::BinaryColor;
 use xpui::host::Canvas;
 use xpui::{Rect, Renderer, Size};
-use xpui_eg::{Backend, Framebuffer, Palette};
+use xpui_eg::{Backend, Palette};
+use xpui_screenshot::Framebuffer;
 
 /// These tests install a global host, so they cannot overlap. Without this two
 /// of them race on the backend's `RefCell` and one panics "already borrowed".

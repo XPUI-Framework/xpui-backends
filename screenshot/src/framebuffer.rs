@@ -5,28 +5,29 @@
 //! assert on the result — which is what makes screenshot tests possible in
 //! ordinary `cargo test`.
 //!
-//! `no_run` because it installs the process-wide host and writes a golden when
-//! one does not exist yet, neither of which belongs in a documentation build:
+//! `no_run` because it writes a golden when one does not exist yet, which
+//! does not belong in a documentation build:
 //!
 //! ```rust,no_run
-//! # use embedded_graphics::pixelcolor::BinaryColor::{Off, On};
-//! # use xpui::{App, NavigationScreen, Screen, Text, View, vstack};
-//! # use xpui_eg::{Backend, Framebuffer, Palette, assert_screenshot};
-//! # struct MyScreen;
-//! # impl MyScreen { fn new() -> Self { MyScreen } }
-//! # impl Screen for MyScreen {
-//! #     type Message = ();
-//! #     fn body(&self) -> impl View<()> { NavigationScreen::new(vstack![0; Text::new("hello")]) }
-//! #     fn update(&mut self, _message: ()) {}
-//! # }
-//! let backend = Backend::leak(Framebuffer::new(480, 800), Palette::new(On, Off));
-//! unsafe { xpui::host::install(backend) };
-//! App::new(MyScreen::new()).render();
-//! backend.with_display(|fb| {
-//!     assert_screenshot("my_screen", fb);   // the assertion
-//!     assert!(fb.ink_in(0, 0, 480, 56) > 0) // and anything a picture cannot say
-//! });
+//! use embedded_graphics::pixelcolor::BinaryColor;
+//! use embedded_graphics::prelude::*;
+//! use embedded_graphics::primitives::{PrimitiveStyle, Rectangle};
+//! use xpui_screenshot::{Framebuffer, assert_screenshot};
+//!
+//! let mut frame = Framebuffer::new(64, 32);
+//! Rectangle::new(Point::new(4, 4), Size::new(16, 8))
+//!     .into_styled(PrimitiveStyle::with_fill(BinaryColor::On))
+//!     .draw(&mut frame)
+//!     .unwrap();
+//!
+//! assert_screenshot("a_filled_rectangle", &frame);   // the assertion
+//! assert!(frame.ink_in(4, 4, 16, 8) > 0);            // and what a picture cannot say
 //! ```
+//!
+//! Any `DrawTarget` works the same way, which is the point: a backend pointed
+//! at a `Framebuffer` instead of a panel draws exactly what it would have
+//! drawn. `xpui-embedded-graphics`'s own screenshot tests are the worked
+//! example.
 //!
 //! [`Framebuffer::to_png`] and [`Framebuffer::from_png`] are the format the
 //! committed goldens are in; [`crate::screenshot::assert_screenshot`] is what
@@ -48,7 +49,14 @@ pub struct Framebuffer {
     pub width: i32,
     pub height: i32,
     /// True where ink was laid down.
-    pub pixels: Vec<bool>,
+    ///
+    /// Private because `width`, `height` and this vector's length are one
+    /// invariant, and a caller holding the vector could break it. [`set`] and
+    /// [`ink`] are what a caller needs.
+    ///
+    /// [`set`]: Framebuffer::set
+    /// [`ink`]: Framebuffer::ink
+    pub(crate) pixels: Vec<bool>,
 }
 
 impl Framebuffer {
@@ -58,6 +66,22 @@ impl Framebuffer {
             height,
             pixels: vec![false; (width * height) as usize],
         }
+    }
+
+    /// Lays ink down, or takes it away. Out of bounds is ignored, as
+    /// [`get`](Framebuffer::get) reads out of bounds as blank.
+    pub fn set(&mut self, x: i32, y: i32, ink: bool) {
+        if x < 0 || y < 0 || x >= self.width || y >= self.height {
+            return;
+        }
+        self.pixels[(y * self.width + x) as usize] = ink;
+    }
+
+    /// Every pixel, row by row, for a caller comparing two whole frames.
+    ///
+    /// Read-only: the length is part of this frame's invariant.
+    pub fn ink(&self) -> &[bool] {
+        &self.pixels
     }
 
     pub fn get(&self, x: i32, y: i32) -> bool {
@@ -133,6 +157,7 @@ impl Framebuffer {
     /// pinned rather than left to a default that may move, and nothing here
     /// writes a timestamp, so re-blessing a screen that did not change
     /// rewrites the same bytes and leaves no diff to review.
+    #[cfg(feature = "golden")]
     pub fn to_png(&self) -> Vec<u8> {
         let mut out = Vec::new();
         let mut encoder = png::Encoder::new(&mut out, self.width as u32, self.height as u32);
@@ -161,6 +186,7 @@ impl Framebuffer {
     /// passed through an image editor on its way back in; every non-white
     /// pixel is ink. Fails rather than panics, so a corrupt golden reports
     /// itself as a corrupt golden.
+    #[cfg(feature = "golden")]
     pub fn from_png(bytes: &[u8]) -> Result<Framebuffer, String> {
         let mut decoder = png::Decoder::new(std::io::Cursor::new(bytes));
         // Unpacks sub-byte depths and drops 16-bit samples to 8, so what comes

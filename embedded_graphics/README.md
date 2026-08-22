@@ -94,7 +94,8 @@ buffer between your event source and the framework:
 
 ```rust
 # use xpui::{Button, Point};
-# use xpui_eg::{Backend, Framebuffer, Palette};
+# use xpui_eg::{Backend, Palette};
+# use xpui_screenshot::Framebuffer;
 # let backend = Backend::new(Framebuffer::new(480, 800), Palette::INK_IS_ON);
 # let (millis, x, y) = (0, 40, 120);
 # let at = Point::new(x, y);
@@ -107,17 +108,21 @@ backend.input(|state| state.touch_down(at));   // everything else
 Everything except held buttons is edge state, cleared by `begin_frame`. A
 button reported as pressed on every frame re-fires whatever it is on.
 
-## Screenshot tests, with the `framebuffer` feature
+## Screenshot tests
 
 ```toml
-xpui-embedded-graphics = { version = "0.1", features = ["framebuffer"] }
+[dev-dependencies]
+xpui-screenshot = "0.1"
 ```
 
-`Framebuffer` is a plain 1-bit `DrawTarget` with no window and no hardware, so
-a screen can be rendered and asserted on in an ordinary `cargo test`:
+A separate crate, because it is `std`, it writes files, and this one builds for
+bare metal. `Framebuffer` is a plain 1-bit `DrawTarget` with no window and no
+hardware, so a screen can be rendered and asserted on in an ordinary
+`cargo test`:
 
 ```rust,no_run
-# use xpui_eg::{assert_screenshot, Backend, Framebuffer, Palette};
+# use xpui_eg::{Backend, Palette};
+# use xpui_screenshot::{Framebuffer, assert_screenshot};
 # let backend = Backend::new(Framebuffer::new(480, 800), Palette::INK_IS_ON);
 backend.with_display(|frame| {
     assert_screenshot("my_screen", frame);      // against a committed PNG

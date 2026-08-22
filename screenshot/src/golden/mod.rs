@@ -6,24 +6,29 @@
 //! image can show any of that. This one records *pixels*, and is an image
 //! because no text can show those without throwing most of them away.
 //!
-//! `no_run` because it installs the process-wide host and writes a golden when
-//! one does not exist yet, neither of which belongs in a documentation build:
+//! `no_run` because it writes a golden when one does not exist yet, which
+//! does not belong in a documentation build:
 //!
 //! ```rust,no_run
-//! # use xpui::{App, NavigationScreen, Screen, Text, View, vstack};
-//! # use xpui_eg::{Backend, Framebuffer, Palette, assert_screenshot};
-//! # struct MyScreen;
-//! # impl MyScreen { fn new() -> Self { MyScreen } }
-//! # impl Screen for MyScreen {
-//! #     type Message = ();
-//! #     fn body(&self) -> impl View<()> { NavigationScreen::new(vstack![0; Text::new("hello")]) }
-//! #     fn update(&mut self, _message: ()) {}
-//! # }
-//! let backend = Backend::leak(Framebuffer::new(480, 800), Palette::INK_IS_ON);
-//! unsafe { xpui::host::install(backend) };
-//! App::new(MyScreen::new()).render();
-//! backend.with_display(|frame| assert_screenshot("my_screen", frame));
+//! use embedded_graphics::pixelcolor::BinaryColor;
+//! use embedded_graphics::prelude::*;
+//! use embedded_graphics::primitives::{PrimitiveStyle, Rectangle};
+//! use xpui_screenshot::{Framebuffer, assert_screenshot};
+//!
+//! let mut frame = Framebuffer::new(64, 32);
+//! Rectangle::new(Point::new(4, 4), Size::new(16, 8))
+//!     .into_styled(PrimitiveStyle::with_fill(BinaryColor::On))
+//!     .draw(&mut frame)
+//!     .unwrap();
+//!
+//! assert_screenshot("a_filled_rectangle", &frame);   // the assertion
+//! assert!(frame.ink_in(4, 4, 16, 8) > 0);            // and what a picture cannot say
 //! ```
+//!
+//! Any `DrawTarget` works the same way, which is the point: a backend pointed
+//! at a `Framebuffer` instead of a panel draws exactly what it would have
+//! drawn. `xpui-embedded-graphics`'s own screenshot tests are the worked
+//! example.
 //!
 //! When the change is intended:
 //!

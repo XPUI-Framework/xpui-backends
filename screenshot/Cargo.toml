@@ -1,0 +1,34 @@
+# The host-side framebuffer and the golden images taken from it.
+#
+# Split out of `xpui-embedded-graphics` because it was the only `std` in that
+# crate and the only thing that wanted `png`, while the rest of it builds for
+# bare metal. A backend that draws on hardware and a harness that writes PNGs
+# are not one job.
+[package]
+name = "xpui-screenshot"
+description = "A host-side framebuffer for xpui backends, and golden-image comparison"
+readme = "README.md"
+keywords = ["testing", "graphics", "snapshot", "embedded-graphics"]
+categories = ["development-tools::testing"]
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+name = "xpui_screenshot"
+crate-type = ["rlib"]
+
+[features]
+default = ["golden"]
+# Comparing a frame against a committed PNG, and writing the diff when it
+# differs. Off, a caller gets `Framebuffer` and its BMP writer and compiles no
+# image codec — which is what the simulator's screenshot key needs and all it
+# needs.
+golden = ["dep:png"]
+
+[dependencies]
+embedded-graphics = "0.8"
+# Pinned to a minor version because the goldens it writes are committed.
+png = { version = "0.18", optional = true }

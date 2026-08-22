@@ -25,7 +25,8 @@ use core::task::{Context, Poll, Waker};
 
 use xpui::Rect;
 use xpui::host::Canvas;
-use xpui_eg::{Backend, Framebuffer, Palette};
+use xpui_eg::{Backend, Palette};
+use xpui_screenshot::Framebuffer;
 
 const WIDTH: i32 = 32;
 const HEIGHT: i32 = 32;

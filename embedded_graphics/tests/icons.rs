@@ -10,7 +10,8 @@ use std::sync::{Mutex, MutexGuard};
 use xpui::Point;
 use xpui::host::{Canvas, IconRef};
 use xpui_chrome::Icon;
-use xpui_eg::{Backend, Framebuffer, Palette, assert_screenshot};
+use xpui_eg::{Backend, Palette};
+use xpui_screenshot::{Framebuffer, assert_screenshot};
 
 /// The installed host is process-wide, so these take turns.
 static SERIAL: Mutex<()> = Mutex::new(());
@@ -128,7 +129,7 @@ fn no_two_icons_are_the_same_picture() {
         .map(|icon| {
             let backend = backend(48, 48);
             backend.draw_icon(Point::new(8, 8), IconRef::new(icon.kind()));
-            (icon, backend.with_display(|frame| frame.pixels.clone()))
+            (icon, backend.with_display(|frame| frame.ink().to_vec()))
         })
         .collect();
 

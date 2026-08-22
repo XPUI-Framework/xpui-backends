@@ -27,11 +27,6 @@ embedded-graphics = "0.8"
 # this backend draws through `FontRenderer` directly instead.
 u8g2-fonts = "0.8"
 
-# Only ever reached through the `framebuffer` feature, which is host-only, so a
-# firmware never links it. Pinned to a minor version because the goldens it
-# writes are committed.
-png = { version = "0.18", optional = true }
-
 # What makes `Backend` genuinely `Sync` rather than claiming to be. See
 # `src/guarded.rs`.
 #
@@ -43,9 +38,6 @@ png = { version = "0.18", optional = true }
 critical-section = { version = "1.2", optional = true }
 
 [features]
-# A host-side framebuffer and the screenshot goldens taken from it.
-# `std` only: it reads and writes files.
-framebuffer = ["dep:png"]
 # Lets xpui's UI harness feed this backend input. Pulls in xpui/testing, which
 # is why it is a feature rather than always on: a firmware should not carry the
 # test doubles.
@@ -58,7 +50,11 @@ critical-section = ["dep:critical-section"]
 
 [dev-dependencies]
 xpui = { workspace = true, features = ["testing"] }
-xpui-embedded-graphics = { path = ".", features = ["framebuffer", "testing"] }
+xpui-embedded-graphics = { path = ".", features = ["testing"] }
+# The host-side framebuffer its screenshot tests draw into. A
+# **dev**-dependency: this crate builds for bare metal and must not carry a
+# PNG codec into a firmware.
+xpui-screenshot = { workspace = true, features = ["golden"] }
 # An implementation, for the host, so a threaded test genuinely serialises
 # rather than link-erroring on the acquire symbol. A **dev**-dependency: this
 # is the one place a library may supply one, because a test binary is a binary.

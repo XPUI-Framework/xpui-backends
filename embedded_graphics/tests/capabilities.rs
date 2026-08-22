@@ -7,8 +7,8 @@
 
 use xpui::host::InputSource;
 use xpui_boards::Board;
-use xpui_eg::Framebuffer as TestDisplay;
 use xpui_eg::{Backend, Palette};
+use xpui_screenshot::Framebuffer as TestDisplay;
 
 fn display() -> TestDisplay {
     TestDisplay::new(200, 120)

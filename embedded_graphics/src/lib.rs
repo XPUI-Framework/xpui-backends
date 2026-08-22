@@ -68,7 +68,7 @@
 //! same screens run on a colour TFT looking monochrome. What it does not do is
 //! let a screen ask for a third colour, because the framework has no way to.
 
-#![cfg_attr(target_os = "none", no_std)]
+#![no_std]
 
 extern crate alloc;
 
@@ -77,14 +77,10 @@ mod canvas;
 mod clip;
 mod display;
 mod fonts;
-#[cfg(feature = "framebuffer")]
-pub mod framebuffer;
 mod guarded;
 mod input;
 mod paced_fill;
 mod palette;
-#[cfg(feature = "framebuffer")]
-pub mod screenshot;
 mod traits;
 
 pub use backend::Backend;
@@ -93,13 +89,9 @@ pub use fonts::{
     Face, Family, Fonts, HELVETICA, Piece, Tier, advance, clear_chosen_family, font_id, pieces,
     request_family,
 };
-#[cfg(feature = "framebuffer")]
-pub use framebuffer::Framebuffer;
 pub use input::InputState;
 pub use paced_fill::PacedFill;
 pub use palette::Palette;
-#[cfg(feature = "framebuffer")]
-pub use screenshot::{assert_screenshot, check_screenshot};
 /// The typefaces, re-exported so a caller can assemble a [`Family`] of its own
 /// without adding a second dependency on `u8g2-fonts` and keeping the two
 /// versions in step.

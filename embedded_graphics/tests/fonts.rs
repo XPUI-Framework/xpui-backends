@@ -14,7 +14,8 @@
 
 use xpui::host::{FontRole, FontStyle, TextMetrics};
 use xpui_chrome::Tokens;
-use xpui_eg::{Backend, FontRenderer, Fonts, Framebuffer, Palette};
+use xpui_eg::{Backend, FontRenderer, Fonts, Palette};
+use xpui_screenshot::Framebuffer;
 
 /// A string that puts every kind of glyph in front of the face: caps,
 /// descenders, digits, a space and an accent. Two different faces cannot

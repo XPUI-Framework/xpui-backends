@@ -6,8 +6,8 @@
 
 use xpui::host::{Canvas, FontRole, FontStyle, TextMetrics};
 use xpui::{Point, Rect, Size};
-use xpui_eg::Framebuffer as TestDisplay;
 use xpui_eg::{Backend, Palette};
+use xpui_screenshot::Framebuffer as TestDisplay;
 
 const WIDTH: i32 = 200;
 const HEIGHT: i32 = 120;
@@ -579,7 +579,7 @@ fn a_thumbnail_reflects_what_is_in_the_framebuffer() {
 
     for y in 0..32 {
         for x in 0..64 {
-            display.pixels[y * 64 + x] = true;
+            display.set(x, y, true);
         }
     }
     let half = display.thumbnail(8);
@@ -602,7 +602,7 @@ fn a_thumbnail_reflects_what_is_in_the_framebuffer() {
 #[test]
 fn a_bmp_has_a_valid_header_and_no_stripe_on_a_ragged_width() {
     let mut display = TestDisplay::new(20, 4);
-    display.pixels[0] = true;
+    display.set(0, 0, true);
 
     let dir = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR"));
     let path = display.write_bmp_in(dir, "header_check");
