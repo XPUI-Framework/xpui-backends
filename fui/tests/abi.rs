@@ -84,7 +84,7 @@ fn own(relative: &str) -> (String, PathBuf) {
 /// symbol it calls is defined by the C++ half, so a harness there could link
 /// only against doubles, a fourth place for the ABI to rot. When it becomes
 /// its own repository they move to a package beside it that depends on
-/// [`xpui_abi_check`] and not on the crate itself. See `docs/specs/42`.
+/// [`xpui_abi_check`] and not on the crate itself. See `docs/specs/done/42-an-abi-check-that-survives-a-move.md`.
 fn sibling(relative: &str) -> (String, PathBuf) {
     let mut root = Path::new(env!("CARGO_MANIFEST_DIR"));
     loop {
