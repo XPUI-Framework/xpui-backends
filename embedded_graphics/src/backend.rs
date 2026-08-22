@@ -4,9 +4,10 @@
 use core::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 use embedded_graphics::prelude::*;
+use xpui::host::KeyRow;
 use xpui::{Button, Point, Rect, Size, SwipeDir};
 use xpui_boards::Board;
-use xpui_chrome::Tokens;
+use xpui_chrome::{Labels, Metrics};
 
 use crate::fonts::{Family, Fonts};
 use crate::guarded::Guarded;
@@ -43,7 +44,9 @@ pub struct Backend<D: DrawTarget> {
     /// Per backend rather than a global, because the whole point of the board
     /// presets is that a 296x128 panel and a 480x800 one need different
     /// numbers — and a process can drive both, as the screenshot tests do.
-    pub(crate) tokens: Tokens,
+    pub(crate) metrics: Metrics,
+    pub(crate) labels: Labels,
+    pub(crate) keys: KeyRow,
     /// Atomics rather than `Cell`s, and no guard: a load and a store are all
     /// either needs, and Cortex-M0+ has both. What it does **not** have is
     /// compare-and-swap, so nothing here may become a read-modify-write.
@@ -118,7 +121,9 @@ impl<D: DrawTarget> Backend<D> {
             }),
             palette,
             fonts: Guarded::new(Fonts::DEFAULT),
-            tokens: Tokens::DEFAULT,
+            metrics: Metrics::DEFAULT,
+            labels: Labels::ENGLISH,
+            keys: KeyRow::READER,
             millis: AtomicU32::new(0),
             dirty: AtomicBool::new(true),
             board: None,
@@ -136,14 +141,16 @@ impl<D: DrawTarget> Backend<D> {
     /// described — which lays out plausibly and puts the screen in a corner of
     /// the glass. A frame loop worth trusting prints both at boot.
     ///
-    /// The board's tokens carry its UI scale, and the faces are chosen to fit
-    /// those tokens — so a board that asks for finger-sized chrome gets type to
+    /// The board's metrics carry its UI scale, and the faces are chosen to fit
+    /// those metrics — so a board that asks for finger-sized chrome gets type to
     /// match it, and a 296x128 strip does not get a face taller than its own
     /// hint band.
     pub fn for_board(display: D, board: Board, palette: Palette<D::Color>) -> Self {
         let mut backend = Backend::new(display, palette)
-            .with_tokens(board.tokens)
-            .with_fonts(Fonts::for_tokens(&board.tokens));
+            .with_metrics(board.metrics)
+            .with_labels(board.labels)
+            .with_keys(board.keys)
+            .with_fonts(Fonts::for_metrics(&board.metrics));
         backend.board = Some(board);
         backend
     }
@@ -155,9 +162,31 @@ impl<D: DrawTarget> Backend<D> {
         self.board
     }
 
-    /// Paints chrome with these tokens instead of the default.
-    pub fn with_tokens(mut self, tokens: Tokens) -> Self {
-        self.tokens = tokens;
+    /// The words this backend paints hints with.
+    pub fn labels(&self) -> &Labels {
+        &self.labels
+    }
+
+    /// What the keys along the device's bottom edge mean.
+    pub fn keys(&self) -> &KeyRow {
+        &self.keys
+    }
+
+    /// The words its hint bar shows. English until an application says so.
+    pub fn with_labels(mut self, labels: Labels) -> Self {
+        self.labels = labels;
+        self
+    }
+
+    /// What the keys along the device's bottom edge mean, left to right.
+    pub fn with_keys(mut self, keys: KeyRow) -> Self {
+        self.keys = keys;
+        self
+    }
+
+    /// Paints chrome to these measurements instead of the default.
+    pub fn with_metrics(mut self, metrics: Metrics) -> Self {
+        self.metrics = metrics;
         self
     }
 
@@ -172,20 +201,20 @@ impl<D: DrawTarget> Backend<D> {
     }
 
     /// The chrome this backend paints with.
-    pub fn tokens(&self) -> &Tokens {
-        &self.tokens
+    pub fn metrics(&self) -> &Metrics {
+        &self.metrics
     }
 
     /// Sets the type in another family, and asks for a repaint.
     ///
     /// **The sizes are re-derived from the chrome, not carried over.** Each
-    /// role keeps the line height this board's tokens called for and the new
+    /// role keeps the line height this board's metrics called for and the new
     /// family answers with the tier it was cut in — so a family with a coarser
     /// ladder still lands inside the rows that were laid out, rather than
     /// inheriting the previous family's heights and overflowing them.
     ///
     /// **This replaces a [`Fonts`] given to [`with_fonts`](Backend::with_fonts).**
-    /// The sizes come from the tokens, so a caller that hand-picked its own
+    /// The sizes come from the metrics, so a caller that hand-picked its own
     /// gets the chrome's back. That is the point — a swap must not carry sizes
     /// into a family that was never measured for them — but it means
     /// `with_fonts` is for a backend nothing will re-set.
@@ -195,7 +224,7 @@ impl<D: DrawTarget> Backend<D> {
     /// measured column — is invalidated by that alone, with nobody having to
     /// remember to say so.
     pub fn set_family(&self, family: &'static Family) {
-        let next = Fonts::for_tokens(&self.tokens).with_family(family);
+        let next = Fonts::for_metrics(&self.metrics).with_family(family);
         self.fonts.with(|fonts| *fonts = next);
         // Both flags, because they answer to different readers. `dirty` is for
         // a caller driving its own loop; `request_update` is what `App`

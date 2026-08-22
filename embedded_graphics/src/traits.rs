@@ -98,9 +98,12 @@ impl<D: DrawTarget> Clock for Backend<D> {
 xpui_chrome::plain_chrome! {
     generic: [D: DrawTarget],
     for Backend<D>,
-    // The backend's own tokens, not a global: two backends in one process may
-    // be driving two different panels.
-    tokens: |backend| &backend.tokens,
+    // The backend's own, not globals: two backends in one process may be
+    // driving two different panels, in two different languages, with two
+    // different key rows.
+    metrics: |backend| &backend.metrics,
+    labels: |backend| &backend.labels,
+    keys: |backend| &backend.keys,
     request_update: |backend| backend.dirty.store(true, core::sync::atomic::Ordering::Relaxed),
 }
 

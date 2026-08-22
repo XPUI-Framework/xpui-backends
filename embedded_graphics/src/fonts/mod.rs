@@ -26,7 +26,7 @@ pub(crate) use switch::chosen_family;
 pub use switch::{clear_chosen_family, request_family};
 
 use xpui::host::{FontId, FontRole, FontStyle};
-use xpui_chrome::Tokens;
+use xpui_chrome::Metrics;
 
 /// The type a chrome is set in: one family, and the size each role wants.
 ///
@@ -109,8 +109,8 @@ impl Fonts {
     /// board's scale is applied.
     ///
     /// [`ui_scale_percent`]: xpui_boards::Board::ui_scale_percent
-    pub const fn for_tokens(tokens: &Tokens) -> Fonts {
-        match tokens.list_row_height {
+    pub const fn for_metrics(metrics: &Metrics) -> Fonts {
+        match metrics.list_row_height {
             44.. => Fonts::LARGE,
             34..=43 => Fonts::DEFAULT,
             26..=33 => Fonts::COMPACT,

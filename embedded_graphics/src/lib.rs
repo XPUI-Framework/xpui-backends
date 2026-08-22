@@ -100,7 +100,7 @@ pub use palette::Palette;
 /// macro reads each face's bytes to derive that tier's id.
 pub use u8g2_fonts::{Font, FontRenderer, fonts as u8g2};
 pub use xpui_boards::Board;
-pub use xpui_chrome::Tokens;
+pub use xpui_chrome::{Labels, Metrics};
 
 /// The crate's prose, compiled.
 ///

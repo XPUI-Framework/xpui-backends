@@ -71,7 +71,7 @@ The faces are U8g2's Helvetica, through
 every size, and the full 8-bit charset — so `Ambiência` renders as itself
 rather than as a row of replacement glyphs.
 
-`Fonts::for_tokens` picks a set from the chrome's own list row height, so a
+`Fonts::for_metrics` picks a set from the chrome's own list row height, so a
 board that scales its chrome up gets type to match: 30 pixels of interface text
 on a reader, 39 once a touch board's scale is applied, 18 on a 296x128 strip.
 On a 218-ppi panel that 30 is **3.4mm** of glass. The mono faces

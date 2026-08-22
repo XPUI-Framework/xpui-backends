@@ -13,7 +13,7 @@
 //! fits.
 
 use xpui::host::{FontRole, FontStyle, TextMetrics};
-use xpui_chrome::Tokens;
+use xpui_chrome::Metrics;
 use xpui_eg::{Backend, FontRenderer, Fonts, Palette};
 use xpui_screenshot::Framebuffer;
 
@@ -40,17 +40,17 @@ fn line_height(fonts: Fonts, role: FontRole) -> i32 {
     metrics(fonts, role, FontStyle::Regular).0
 }
 
-/// A `Tokens` that differs from the default in one number, so a case says only
+/// A `Metrics` that differs from the default in one number, so a case says only
 /// what it varies.
-fn with_row_height(row: i32) -> Tokens {
-    Tokens {
+fn with_row_height(row: i32) -> Metrics {
+    Metrics {
         list_row_height: row,
-        ..Tokens::DEFAULT
+        ..Metrics::DEFAULT
     }
 }
 
-fn ui_height(tokens: &Tokens) -> i32 {
-    line_height(Fonts::for_tokens(tokens), FontRole::Ui)
+fn ui_height(metrics: &Metrics) -> i32 {
+    line_height(Fonts::for_metrics(metrics), FontRole::Ui)
 }
 
 /// Every family this backend ships. A caller may register its own, and the
@@ -69,17 +69,17 @@ const PRESETS: [(&str, Fonts); 4] = [
 /// nothing selects is a preset that has quietly stopped being used.
 #[test]
 fn every_preset_is_what_its_own_chrome_selects() {
-    for (name, tokens, expected) in [
-        ("SMALL", Tokens::SMALL, Fonts::SMALL),
-        ("COMPACT", Tokens::COMPACT, Fonts::COMPACT),
-        ("DEFAULT", Tokens::DEFAULT, Fonts::DEFAULT),
+    for (name, preset, expected) in [
+        ("SMALL", Metrics::SMALL, Fonts::SMALL),
+        ("COMPACT", Metrics::COMPACT, Fonts::COMPACT),
+        ("DEFAULT", Metrics::DEFAULT, Fonts::DEFAULT),
         (
             "DEFAULT scaled for touch",
-            Tokens::DEFAULT.scaled(120),
+            Metrics::DEFAULT.scaled(120),
             Fonts::LARGE,
         ),
     ] {
-        let chosen = Fonts::for_tokens(&tokens);
+        let chosen = Fonts::for_metrics(&preset);
         for role in [FontRole::Ui, FontRole::UiSmall, FontRole::Reader] {
             assert_eq!(
                 metrics(chosen, role, FontStyle::Regular),
@@ -95,8 +95,8 @@ fn every_preset_is_what_its_own_chrome_selects() {
 /// would be more space around the same letters.
 #[test]
 fn a_board_that_scales_its_chrome_gets_larger_type() {
-    let plain = Fonts::for_tokens(&Tokens::DEFAULT);
-    let scaled = Fonts::for_tokens(&Tokens::DEFAULT.scaled(120));
+    let plain = Fonts::for_metrics(&Metrics::DEFAULT);
+    let scaled = Fonts::for_metrics(&Metrics::DEFAULT.scaled(120));
 
     for role in [FontRole::Ui, FontRole::UiSmall] {
         assert!(
@@ -127,7 +127,7 @@ fn a_taller_row_never_gets_shorter_type() {
 #[test]
 fn every_step_of_the_ladder_fits_its_own_row() {
     for row in 20..=80 {
-        let fonts = Fonts::for_tokens(&with_row_height(row));
+        let fonts = Fonts::for_metrics(&with_row_height(row));
         let ui = line_height(fonts, FontRole::Ui);
         assert!(
             ui < row,
