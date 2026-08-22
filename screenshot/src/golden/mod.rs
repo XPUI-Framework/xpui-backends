@@ -10,25 +10,19 @@
 //! does not belong in a documentation build:
 //!
 //! ```rust,no_run
-//! use embedded_graphics::pixelcolor::BinaryColor;
-//! use embedded_graphics::prelude::*;
-//! use embedded_graphics::primitives::{PrimitiveStyle, Rectangle};
+//! # use embedded_graphics::pixelcolor::BinaryColor;
+//! # use embedded_graphics::prelude::*;
+//! # use embedded_graphics::primitives::{PrimitiveStyle, Rectangle};
 //! use xpui_screenshot::{Framebuffer, assert_screenshot};
 //!
-//! let mut frame = Framebuffer::new(64, 32);
-//! Rectangle::new(Point::new(4, 4), Size::new(16, 8))
-//!     .into_styled(PrimitiveStyle::with_fill(BinaryColor::On))
-//!     .draw(&mut frame)
-//!     .unwrap();
-//!
-//! assert_screenshot("a_filled_rectangle", &frame);   // the assertion
+//! # let mut frame = Framebuffer::new(64, 32);
+//! # Rectangle::new(Point::new(4, 4), Size::new(16, 8))
+//! #     .into_styled(PrimitiveStyle::with_fill(BinaryColor::On))
+//! #     .draw(&mut frame)
+//! #     .unwrap();
+//! assert_screenshot("a_filled_rectangle", &frame);   // against a committed PNG
 //! assert!(frame.ink_in(4, 4, 16, 8) > 0);            // and what a picture cannot say
 //! ```
-//!
-//! Any `DrawTarget` works the same way, which is the point: a backend pointed
-//! at a `Framebuffer` instead of a panel draws exactly what it would have
-//! drawn. `xpui-embedded-graphics`'s own screenshot tests are the worked
-//! example.
 //!
 //! When the change is intended:
 //!
@@ -152,13 +146,21 @@ fn updating() -> bool {
 mod tests {
     use super::compare::{Difference, difference};
     use super::report::{diff_image, difference_map};
+    use std::sync::Mutex;
+
     use super::{check_screenshot, path_for, updating};
     use crate::framebuffer::Framebuffer;
 
-    /// A golden of its own, committed beside the crate's screens, so the
-    /// comparison itself is exercised against a file on disk rather than only
-    /// in memory.
+    /// A golden of its own, so the comparison is exercised against a file on
+    /// disk rather than only in memory. The one golden this crate owns; every
+    /// other belongs to whichever crate's test draws it.
     const PROBE: &str = "check_screenshot_probe";
+
+    /// The two tests that resolve a golden path, serialised.
+    ///
+    /// `CARGO_MANIFEST_DIR` is process-wide, and one of them moves it to prove
+    /// the resolver reads it rather than a constant compiled in here.
+    static RESOLVING: Mutex<()> = Mutex::new(());
 
     /// What `PROBE` holds: a shape with ink in both halves, so a flipped pixel
     /// can be put somewhere the encoder is not already writing.
@@ -174,9 +176,10 @@ mod tests {
     /// **The line the rest of this repository stands on.**
     ///
     /// Every pixel assertion in this repository is this function returning
-    /// `Err`: eighty-two of them, being the gallery's seventy board captures
-    /// and three families, this crate's own seven — the eighth golden beside
-    /// them is this test's probe — and the tutorial's two.
+    /// `Err`: eighty-two of them, being the gallery's seventy board
+    /// captures and three families, the `embedded_graphics` backend's seven,
+    /// and the tutorial's two. The eighty-third is this test's own probe, in
+    /// this crate.
     ///
     /// Replace its last two lines with `Ok(())` and the whole suite still
     /// passes while nothing is compared at all, which is the one failure this
@@ -184,6 +187,9 @@ mod tests {
     /// the purpose.
     #[test]
     fn a_frame_that_differs_from_its_golden_comes_back_as_an_error() {
+        let _guard = RESOLVING
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         // `UPDATE_SNAPSHOTS` means "rewrite, do not compare", so under it there
         // is no comparison to make and the second half would overwrite the
         // probe with the wrong picture. The gate runs `cargo test` without it.
@@ -217,6 +223,11 @@ mod tests {
     /// whatever the working directory happened to be.
     #[test]
     fn a_golden_lives_under_the_crate_being_tested() {
+        let _guard = RESOLVING
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let real = std::env::var("CARGO_MANIFEST_DIR").expect("set under cargo test");
+
         let path = path_for(PROBE);
         assert!(
             path.ends_with("tests/screenshots/check_screenshot_probe.png"),
@@ -224,9 +235,33 @@ mod tests {
             path.display()
         );
         assert!(
-            path.starts_with(env!("CARGO_MANIFEST_DIR")),
+            path.starts_with(&real),
             "a golden was resolved outside the crate under test: {}",
             path.display()
+        );
+
+        // The property this test exists for is that the root is read at *run*
+        // time, from whichever crate is under test. Asserting against
+        // `env!(..)` cannot show that: inside one crate the compile-time and
+        // run-time values are the same string, so a resolver that hardcoded
+        // its own directory would pass. Move the variable and the answer has
+        // to move with it, or every consumer's goldens land in this crate.
+        //
+        // Safety: `set_var` is not thread-safe, and `RESOLVING` is what makes
+        // this block single-threaded — the other test that resolves a path
+        // takes the same lock. Breaking that invariant is a data race, which
+        // is undefined behaviour rather than a wrong path.
+        unsafe { std::env::set_var("CARGO_MANIFEST_DIR", "/proof/of/the/root") };
+        let moved = path_for(PROBE);
+        // Safety: as above, and restoring it before the guard drops is what
+        // keeps every other test seeing the real directory.
+        unsafe { std::env::set_var("CARGO_MANIFEST_DIR", &real) };
+
+        assert!(
+            moved.starts_with("/proof/of/the/root"),
+            "the golden root is compiled in rather than read, so every crate's \
+             goldens would be written into this one: {}",
+            moved.display()
         );
     }
 

@@ -4,8 +4,8 @@
 //! draws on whatever hardware it was handed and builds for bare metal; this
 //! reads and writes files, decodes PNG, and only ever runs on a laptop or a CI
 //! machine. Keeping the two together made `xpui-embedded-graphics` a `std`
-//! crate on the host by accident, and made every consumer of it compile a PNG
-//! codec to get a BMP writer that does not use one.
+//! crate on the host by accident — `no_std` only when the target said so —
+//! and put a PNG codec behind a feature of a crate that ships to bare metal.
 //!
 //! [`Framebuffer`] is an `embedded-graphics` `DrawTarget` like any other, so a
 //! backend needs no knowledge of it at all: point one at this instead of a

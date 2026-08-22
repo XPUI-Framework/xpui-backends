@@ -160,6 +160,13 @@ fn set(frame: &mut Framebuffer, x: i32, y: i32, ink: bool) {
 /// an integration test with the working directory at its own crate root, which
 /// in a workspace is not where the shared `target/` is. The binary itself is
 /// always at `<target>/<profile>/deps/<name>-<hash>`.
+///
+/// Counting three levels is safe here in a way it was not in the ABI checker,
+/// which counted its own depth in the repository: this counts cargo's own
+/// layout, which cargo guarantees. And a wrong answer puts a failure artefact
+/// somewhere unexpected rather than reporting a pass — the fallback is a
+/// relative `target/`, not a panic, because a diff nobody can find is a worse
+/// outcome than a test that fails without one.
 fn diff_dir() -> PathBuf {
     let target = env::current_exe()
         .ok()

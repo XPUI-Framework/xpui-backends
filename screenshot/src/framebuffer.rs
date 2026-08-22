@@ -1,18 +1,15 @@
 //! A framebuffer to draw into, and several ways to look at it.
 //!
-//! Behind the `framebuffer` feature, and `std` only. It exists so an app built
-//! on this backend can render a screen with no window and no hardware, then
+//! `std` only, and the reason this crate is not part of a backend. It exists
+//! so an app can render a screen with no window and no hardware, then
 //! assert on the result — which is what makes screenshot tests possible in
 //! ordinary `cargo test`.
 //!
-//! `no_run` because it writes a golden when one does not exist yet, which
-//! does not belong in a documentation build:
-//!
-//! ```rust,no_run
+//! ```rust
 //! use embedded_graphics::pixelcolor::BinaryColor;
 //! use embedded_graphics::prelude::*;
 //! use embedded_graphics::primitives::{PrimitiveStyle, Rectangle};
-//! use xpui_screenshot::{Framebuffer, assert_screenshot};
+//! use xpui_screenshot::Framebuffer;
 //!
 //! let mut frame = Framebuffer::new(64, 32);
 //! Rectangle::new(Point::new(4, 4), Size::new(16, 8))
@@ -20,19 +17,19 @@
 //!     .draw(&mut frame)
 //!     .unwrap();
 //!
-//! assert_screenshot("a_filled_rectangle", &frame);   // the assertion
-//! assert!(frame.ink_in(4, 4, 16, 8) > 0);            // and what a picture cannot say
+//! assert_eq!(frame.ink_in(4, 4, 16, 8), 16 * 8);
+//! assert!(!frame.get(0, 0));
 //! ```
 //!
 //! Any `DrawTarget` works the same way, which is the point: a backend pointed
-//! at a `Framebuffer` instead of a panel draws exactly what it would have
-//! drawn. `xpui-embedded-graphics`'s own screenshot tests are the worked
-//! example.
+//! at one of these instead of a panel draws exactly what it would have drawn.
+//! A caller holding a `Backend` reaches it through `with_display`.
 //!
-//! [`Framebuffer::to_png`] and [`Framebuffer::from_png`] are the format the
-//! committed goldens are in; [`crate::screenshot::assert_screenshot`] is what
-//! compares them. [`Framebuffer::thumbnail`] and [`Framebuffer::write_bmp`]
-//! are for looking, not for asserting.
+//! Comparing a frame against a committed PNG is the `golden` module, behind
+//! the feature of the same name. Nothing here needs it: `to_png` and
+//! `from_png` are the format those goldens are in and are gated with it, while
+//! [`Framebuffer::thumbnail`] and [`Framebuffer::write_bmp`] are always here
+//! and are for looking, not for asserting.
 
 use std::fs;
 use std::path::PathBuf;
@@ -210,6 +207,7 @@ impl Framebuffer {
 
     /// Rows packed the way a 1-bit greyscale PNG wants them: top down, one bit
     /// per pixel, and 0 is black.
+    #[cfg(feature = "golden")]
     fn packed_rows(&self) -> Vec<u8> {
         let row_bytes = (self.width as usize).div_ceil(8);
         let mut out = Vec::with_capacity(row_bytes * self.height as usize);
@@ -232,7 +230,7 @@ impl Framebuffer {
     /// look at the frame.
     ///
     /// A debugging helper, and only that: **nothing compares a BMP**. The
-    /// assertion is [`crate::screenshot::assert_screenshot`] against a
+    /// assertion is `golden::assert_screenshot` against a
     /// committed PNG. Reach for this when you want to eyeball a frame from a
     /// test that has no golden — the icon sheet, or the simulator's screenshot
     /// key — and do not pair it with a screenshot assertion, because two

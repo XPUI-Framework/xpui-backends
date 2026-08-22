@@ -7,7 +7,6 @@
 [package]
 name = "xpui-screenshot"
 description = "A host-side framebuffer for xpui backends, and golden-image comparison"
-readme = "README.md"
 keywords = ["testing", "graphics", "snapshot", "embedded-graphics"]
 categories = ["development-tools::testing"]
 version.workspace = true
