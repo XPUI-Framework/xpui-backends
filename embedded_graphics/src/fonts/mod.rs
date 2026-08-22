@@ -100,7 +100,7 @@ impl Fonts {
     ///
     /// Chosen by list row height, because that is the band body text is
     /// painted into and the one every preset scales together with the rest of
-    /// itself. A board's [`ui_scale_percent`] reaches the type this way rather
+    /// itself. A device's UI scale reaches the type this way rather
     /// than directly: scaling the chrome up moves the row across a threshold,
     /// and the type follows it.
     ///
@@ -108,7 +108,6 @@ impl Fonts {
     /// 24 on a strip, 30 on a small panel, 40 on a reader, and 48 once a touch
     /// board's scale is applied.
     ///
-    /// [`ui_scale_percent`]: xpui_boards::Board::ui_scale_percent
     pub const fn for_metrics(metrics: &Metrics) -> Fonts {
         match metrics.list_row_height {
             44.. => Fonts::LARGE,

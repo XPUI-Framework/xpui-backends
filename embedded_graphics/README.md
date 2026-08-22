@@ -47,8 +47,10 @@ while app.is_running() {
 ```
 
 It supplies `Canvas` and `TextMetrics` itself, `InputSource` and `Clock` from
-whatever you feed it — bar `has_left_right_keys`, which it reads off the board
-it was built for — and takes `Chrome` from
+whatever you feed it — bar `has_left_right_keys`, which is a fact about the
+hardware and so is **told** to it: `with_left_right_keys(true)`. Left unsaid it
+answers `false`, which costs a keystroke on a device that has the pair and is
+the only direction that stays usable if it is wrong. It takes `Chrome` from
 [`xpui-chrome`](../chrome/) — so a list, a dialog and a slider look like
 something without you drawing one.
 

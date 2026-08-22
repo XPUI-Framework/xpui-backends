@@ -85,6 +85,12 @@ mod traits;
 
 pub use backend::Backend;
 pub use display::DisplayLoan;
+/// The trait a [`Backend`] draws through, re-exported for the same reason the
+/// typefaces are: a caller that writes its own `fn wire<D: DrawTarget>` needs
+/// this bound, and reaching it through a second `embedded-graphics` dependency
+/// is how the two versions drift apart. They are different types when they do,
+/// and the error names the same path twice.
+pub use embedded_graphics::draw_target::DrawTarget;
 pub use fonts::{
     Face, Family, Fonts, HELVETICA, Piece, Tier, advance, clear_chosen_family, font_id, pieces,
     request_family,
@@ -99,7 +105,6 @@ pub use palette::Palette;
 /// `Font` is among them because [`font_tier!`](crate::font_tier) names it: the
 /// macro reads each face's bytes to derive that tier's id.
 pub use u8g2_fonts::{Font, FontRenderer, fonts as u8g2};
-pub use xpui_boards::Board;
 pub use xpui_chrome::{Labels, Metrics};
 
 /// The crate's prose, compiled.

@@ -6,7 +6,6 @@ use core::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use embedded_graphics::prelude::*;
 use xpui::host::KeyRow;
 use xpui::{Button, Point, Rect, Size, SwipeDir};
-use xpui_boards::Board;
 use xpui_chrome::{Labels, Metrics};
 
 use crate::fonts::{Family, Fonts};
@@ -41,7 +40,7 @@ pub struct Backend<D: DrawTarget> {
     fonts: Guarded<Fonts>,
     /// The chrome this backend paints with.
     ///
-    /// Per backend rather than a global, because the whole point of the board
+    /// Per backend rather than a global, because the whole point of a device
     /// presets is that a 296x128 panel and a 480x800 one need different
     /// numbers — and a process can drive both, as the screenshot tests do.
     pub(crate) metrics: Metrics,
@@ -54,10 +53,15 @@ pub struct Backend<D: DrawTarget> {
     /// Set whenever the framework asks for a repaint, so a caller driving its
     /// own loop can tell whether pushing pixels is worth it.
     pub(crate) dirty: AtomicBool,
-    /// The board this was built for, when it was built from one. A frame loop
-    /// needs `refresh_ms` to decide how often polling is worth it, and without
-    /// this it has to keep a second copy that can drift from the first.
-    board: Option<Board>,
+    /// Whether the device has a Left/Right pair to nudge a value with.
+    ///
+    /// Stored, not derived: this backend draws on whatever `DrawTarget` it was
+    /// handed and has no way to know what is around it. `false` unless a
+    /// caller says otherwise, which is the safe direction rather than the
+    /// accurate one — a control told the pair exists when it does not cannot
+    /// be changed by any key, while one told it does not exist is entered and
+    /// left instead.
+    pub(crate) left_right_keys: bool,
 }
 
 // With the `critical-section` feature there is **no `unsafe impl` here at
@@ -126,40 +130,8 @@ impl<D: DrawTarget> Backend<D> {
             keys: KeyRow::READER,
             millis: AtomicU32::new(0),
             dirty: AtomicBool::new(true),
-            board: None,
+            left_right_keys: false,
         }
-    }
-
-    /// A backend given a board's chrome, its type, and its palette.
-    ///
-    /// The same `Board` the simulator reads, so a screen laid out in a window
-    /// and the same screen on hardware get identical chrome.
-    ///
-    /// **The size is the display's, not the board's.** `Backend::new` measures
-    /// whatever `DrawTarget` it is handed and this changes nothing about that,
-    /// so a driver configured a quarter turn out reports a size the board never
-    /// described — which lays out plausibly and puts the screen in a corner of
-    /// the glass. A frame loop worth trusting prints both at boot.
-    ///
-    /// The board's metrics carry its UI scale, and the faces are chosen to fit
-    /// those metrics — so a board that asks for finger-sized chrome gets type to
-    /// match it, and a 296x128 strip does not get a face taller than its own
-    /// hint band.
-    pub fn for_board(display: D, board: Board, palette: Palette<D::Color>) -> Self {
-        let mut backend = Backend::new(display, palette)
-            .with_metrics(board.metrics)
-            .with_labels(board.labels)
-            .with_keys(board.keys)
-            .with_fonts(Fonts::for_metrics(&board.metrics));
-        backend.board = Some(board);
-        backend
-    }
-
-    /// The board this backend was built for, if it was built from one.
-    ///
-    /// `None` from [`Backend::new`], which is given a size and no board.
-    pub fn board(&self) -> Option<Board> {
-        self.board
     }
 
     /// The words this backend paints hints with.
@@ -170,6 +142,17 @@ impl<D: DrawTarget> Backend<D> {
     /// What the keys along the device's bottom edge mean.
     pub fn keys(&self) -> &KeyRow {
         &self.keys
+    }
+
+    /// Says the device has a Left/Right pair. See [`Backend::left_right_keys`].
+    pub fn with_left_right_keys(mut self, present: bool) -> Self {
+        self.left_right_keys = present;
+        self
+    }
+
+    /// Whether it was told the device has a Left/Right pair.
+    pub fn left_right_keys(&self) -> bool {
+        self.left_right_keys
     }
 
     /// The words its hint bar shows. English until an application says so.
@@ -208,7 +191,7 @@ impl<D: DrawTarget> Backend<D> {
     /// Sets the type in another family, and asks for a repaint.
     ///
     /// **The sizes are re-derived from the chrome, not carried over.** Each
-    /// role keeps the line height this board's metrics called for and the new
+    /// role keeps the line height these metrics called for and the new
     /// family answers with the tier it was cut in — so a family with a coarser
     /// ladder still lands inside the rows that were laid out, rather than
     /// inheriting the previous family's heights and overflowing them.
@@ -238,6 +221,18 @@ impl<D: DrawTarget> Backend<D> {
         xpui::host::request_update();
     }
 
+    /// Leaks a backend a caller has finished building.
+    ///
+    /// [`leak`](Backend::leak) constructs and leaks in one step, which leaves
+    /// nowhere to put the builders. This is the other order: build it, then
+    /// give it the `'static` life the installed host needs.
+    pub fn leaked(self) -> &'static Self
+    where
+        D: 'static,
+    {
+        alloc::boxed::Box::leak(alloc::boxed::Box::new(self))
+    }
+
     /// Leaks the backend so it can be installed.
     ///
     /// [`xpui::host::install`] takes a `&'static`, and a backend lives as long
@@ -248,16 +243,6 @@ impl<D: DrawTarget> Backend<D> {
         D: 'static,
     {
         alloc::boxed::Box::leak(alloc::boxed::Box::new(Backend::new(display, palette)))
-    }
-
-    /// [`leak`](Backend::leak), sized for a board.
-    pub fn leak_for_board(display: D, board: Board, palette: Palette<D::Color>) -> &'static Self
-    where
-        D: 'static,
-    {
-        alloc::boxed::Box::leak(alloc::boxed::Box::new(Backend::for_board(
-            display, board, palette,
-        )))
     }
 
     /// Starts a frame: advances the clock and clears one-frame input.

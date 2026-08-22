@@ -46,16 +46,18 @@ impl<D: DrawTarget> InputSource for Backend<D> {
         self.frame.with_ref(|frame| frame.input.has_touch())
     }
 
-    /// Taken from the board, which lists every key and what it sends, rather
-    /// than from the frame: this describes the device and does not change
-    /// between one frame and the next.
+    /// What the caller said, rather than what the frame carries: this
+    /// describes the device and does not change between one frame and the
+    /// next.
     ///
-    /// A backend built by [`Backend::new`](crate::Backend::new) has no board
-    /// and answers `false` — see
-    /// [`Board::has_left_right_keys`](xpui_boards::Board::has_left_right_keys).
+    /// This backend draws on any `DrawTarget` and has no way to know what is
+    /// around it. Whoever built it does, and says so with
+    /// [`with_left_right_keys`](crate::Backend::with_left_right_keys). A
+    /// caller that says nothing gets `false`, which leaves a value enterable
+    /// and leavable rather than unchangeable — the wrong answer in the only
+    /// direction that stays usable.
     fn has_left_right_keys(&self) -> bool {
-        self.board()
-            .is_some_and(|board| board.has_left_right_keys())
+        self.left_right_keys
     }
 
     fn tap(&self) -> Option<Point> {
