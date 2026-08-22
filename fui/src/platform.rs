@@ -22,7 +22,7 @@ pub trait Platform: Sync {
     /// mode a reader never needed. Only the firmware knows which keys its
     /// device carries.
     ///
-    /// `xpui-boards` has the answer for every board described there, as
+    /// the `xpui-boards-*` crates have the answer for every board described there, as
     /// `Board::has_left_right_keys` — worth checking against, because a
     /// firmware and that crate describing the same device differently is a
     /// disagreement nothing here can detect. This crate does not depend on it.

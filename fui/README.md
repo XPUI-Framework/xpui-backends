@@ -84,8 +84,8 @@ impl Platform for MyPlatform {
     fn is_pressed(&self, button: Button) -> bool { my_input().held(button) }
     fn was_released(&self, button: Button) -> bool { my_input().released(button) }
     // Does this device carry Left and Right? Read it off the board rather
-    // than inferring it from the shape of the device — `Board::X3` does and
-    // `Board::X4_PRO` does not, and both are readers.
+    // than inferring it from the shape of the device — `xteink::X3` does and
+    // `xteink::X4_PRO` does not, and both are readers.
     fn has_left_right_keys(&self) -> bool { true }
 }
 ```
@@ -97,7 +97,7 @@ implements exactly those five and nothing else, for a panel that only displays.
 `has_left_right_keys` is the only one of the five that asks about the device
 rather than about this frame, and the only method below `was_released` without a
 default, because there is no answer that is safe to inherit.
-[`src/platform.rs`](src/platform.rs) says why, and points at `xpui-boards` for
+[`src/platform.rs`](src/platform.rs) says why, and points at the board crates for
 the answer each board gives.
 
 ## The distinctions that break things quietly
