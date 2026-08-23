@@ -3,7 +3,7 @@
 > ⚠️ **Under heavy development.** Not production-ready. The API can break
 > without notice. Use at your own risk.
 
-An [`xpui`](https://github.com/XPUI-Framework/xpui-framework/tree/main/crates/xpui) backend that draws through **FreeInkUI**.
+An [`xpui`](https://github.com/XPUI-Framework/xpui-framework) backend that draws through **FreeInkUI**.
 
 FreeInkUI is a header-only C++ component library for e-ink firmware. It already
 knows what a list row, a dialog and a slider look like — so a screen written

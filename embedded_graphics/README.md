@@ -3,7 +3,7 @@
 > ⚠️ **Under heavy development.** Not production-ready. The API can break
 > without notice. Use at your own risk.
 
-An [`xpui`](https://github.com/XPUI-Framework/xpui-framework/tree/main/crates/xpui) backend that draws through any `embedded-graphics`
+An [`xpui`](https://github.com/XPUI-Framework/xpui-framework) backend that draws through any `embedded-graphics`
 `DrawTarget` — which is most of the embedded Rust display ecosystem: e-paper
 panels, SSD1306 and friends, colour TFTs, and the desktop simulator.
 
@@ -50,7 +50,7 @@ while app.is_running() {
 ```
 
 It supplies `Canvas` and `TextMetrics` itself — the contract for all five is
-[`crates/xpui/docs/host.md`](https://github.com/XPUI-Framework/xpui-framework/blob/main/crates/xpui/docs/host.md) — `InputSource` and `Clock` from
+[`crates/xpui/docs/host.md`](https://github.com/XPUI-Framework/xpui-framework/blob/main/docs/host.md) — `InputSource` and `Clock` from
 whatever you feed it — bar `has_left_right_keys`, which is a fact about the
 hardware and so is **told** to it: `with_left_right_keys(true)`. Left unsaid it
 answers `false`, which costs a keystroke on a device that has the pair and is

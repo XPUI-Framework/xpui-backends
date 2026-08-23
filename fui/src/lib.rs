@@ -96,10 +96,8 @@ pub type Context = *mut c_void;
 /// example passed the wrong form to its own macro for as long as nothing
 /// tried it.
 ///
-/// The tutorial that used to live here is in `xpui-cpp` now. Its C++ blocks
-/// include `xpui_host.h`, which is the *application's* header and lives with
-/// the host that defines it — so half of it could not be compiled from this
-/// repository, and half of it was.
+/// The tutorial for integrating this backend into a C++ application is in
+/// `xpui-cpp`, with the host whose header its snippets include.
 #[cfg(doctest)]
 mod guides {
     #[doc = include_str!("../README.md")]

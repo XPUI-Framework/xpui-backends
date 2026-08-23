@@ -179,14 +179,12 @@ gates() {
 
 case "${1:-check}" in
   check)
-    rust_format_check
-    cpp_format_check
+    run_all "${FORMAT_CHECK[@]}"
     gates
     printf '\nChecks passed.\n'
     ;;
   fix)
-    rust_format_fix
-    cpp_format_fix
+    run_all "${FORMAT_FIX[@]}"
     gates
     printf '\nFormatted and checked.\n'
     ;;

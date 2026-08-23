@@ -11,9 +11,11 @@ authors.workspace = true
 repository.workspace = true
 # The C++ half has to reach a consuming firmware's build, so it ships with the
 # crate rather than only living in the repository.
-# `docs/**` is not optional: `src/lib.rs` pulls the tutorial in with
-# `include_str!`, so a package without it does not compile at `cargo package`'s
-# verify step.
+# `cpp/**` is not optional: it is the shim, and a package without it is a
+# backend a C++ host cannot link. `docs/**` ships the design notes and the
+# coverage table beside the crate they describe — nothing `include_str!`s them
+# any more, since the tutorial that did moved to `xpui-cpp`, so this one is a
+# choice rather than a requirement.
 include = ["src/**", "cpp/**", "docs/**", "README.md"]
 
 [lib]

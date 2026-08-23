@@ -173,13 +173,12 @@ mod tests {
         frame
     }
 
-    /// **The line the rest of this repository stands on.**
+    /// **The line every pixel assertion in the organisation stands on.**
     ///
-    /// Every pixel assertion in this repository is this function returning
-    /// `Err`: eighty-two of them, being the gallery's seventy board
-    /// captures and three families, the `embedded_graphics` backend's seven,
-    /// and the tutorial's two. The eighty-third is this test's own probe, in
-    /// this crate.
+    /// Each one is this function returning `Err`: eighty-two of them, and only
+    /// seven are in this repository. Seventy-three are `xpui-gallery`'s —
+    /// seventy board captures and three families — and two are the tutorial
+    /// screen's, beside them. The eighty-third is this test's own probe, here.
     ///
     /// Replace its last two lines with `Ok(())` and the whole suite still
     /// passes while nothing is compared at all, which is the one failure this

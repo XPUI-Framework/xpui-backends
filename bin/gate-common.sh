@@ -1,9 +1,11 @@
 # The half of the gate every repository runs.
 #
 # **This file is copied, not shared.** There is no submodule and nothing is
-# published, so all nine repositories under github.com/XPUI-Framework carry a
-# byte-identical copy, and `gates_agree` in `xpui-dev` fails the moment two of
-# them differ. A copy nobody compares is a fork with a delay on it.
+# published, so every repository carries a byte-identical copy — the nine under
+# github.com/XPUI-Framework and, until it is gutted, the monorepo they were
+# extracted from, which is ten. `gates_agree` in `xpui-dev` hashes all of them
+# and fails the moment two differ. A copy nobody compares is a fork with a
+# delay on it.
 #
 # It defines functions and reads configuration. It runs nothing, dispatches
 # nothing, and is sourced by a `build-and-test.sh` that has already `cd`ed to
@@ -30,6 +32,12 @@
 
 # Both halves, for `every_check_runs`.
 GATE_FILES=("build-and-test.sh" "bin/gate-common.sh")
+
+# The formatters, named once each so `every_check_runs` can see a deletion.
+# `check` and `all` run the first list, `fix` the second; a repository
+# dispatches these arrays rather than spelling the names out per arm.
+FORMAT_CHECK=(rust_format_check cpp_format_check)
+FORMAT_FIX=(rust_format_fix cpp_format_fix)
 
 # Defaults, so a repository declares only what it has.
 #
@@ -88,22 +96,62 @@ rust_format_fix() {
 # walking nothing. It is a different sentence from `skipped:`, which here
 # always means a prerequisite is missing and a check that should have run did
 # not.
+#
+# **Whether there is C++ is asked of the tree, not of the script.** Keying it
+# on the script's absence made losing the executable bit — a `git archive`, a
+# zip, a filesystem without one — print "no C++ in this repository" in a
+# repository with twenty-three C++ files, and exit 0. `cpp_snippets_compile`
+# already gets this right by counting fences; this counts files.
+has_cpp() {
+  git ls-files '*.cpp' '*.h' '*.hpp' 2>/dev/null | grep -q .
+}
+
+# What the two entry points below should do, said once. Three answers:
+# `run` when the formatter is here, `none` when there is nothing to format,
+# and a failure when there is C++ and no way to check it.
+#
+# Its callers read it through `|| state=$?`, which is not decoration: a bare
+# call returning non-zero under `set -e` takes the whole gate down before the
+# caller can look at the number. That is exactly what happened the first time
+# this was written, and the symptom was a gate that stopped after printing
+# "C++ formatting" with no message at all.
+cpp_formatter_state() {
+  [ -x ./bin/clang-format-fix ] && return 0
+  if has_cpp; then
+    echo "ERROR: this repository has C++ and no runnable bin/clang-format-fix." >&2
+    echo "       Copy it from a sibling; an unformattable file is one CI will" >&2
+    echo "       reject and nothing here would have told you." >&2
+    return 2
+  fi
+  echo "    no C++ in this repository"
+  return 1
+}
+
 cpp_format_check() {
   say "C++ formatting"
-  if [ ! -x ./bin/clang-format-fix ]; then
-    echo "    no C++ in this repository"
-    return 0
-  fi
+  local state=0
+  cpp_formatter_state || state=$?
+  if [ "${state}" -eq 1 ]; then return 0; fi
+  if [ "${state}" -eq 2 ]; then return 1; fi
   ./bin/clang-format-fix -c
 }
 
 cpp_format_fix() {
   say "C++ formatting (fixing)"
-  if [ ! -x ./bin/clang-format-fix ]; then
-    echo "    no C++ in this repository"
-    return 0
-  fi
+  local state=0
+  cpp_formatter_state || state=$?
+  if [ "${state}" -eq 1 ]; then return 0; fi
+  if [ "${state}" -eq 2 ]; then return 1; fi
   ./bin/clang-format-fix
+}
+
+# Runs each named check in order. The dispatch arms call this with
+# `FORMAT_CHECK` or `FORMAT_FIX` so no check name is written twice.
+run_all() {
+  local check
+  for check in "$@"; do
+    "${check}"
+  done
 }
 
 # Whether a target is installed, so a check can skip rather than fail.
@@ -601,13 +649,17 @@ prose_is_compiled() {
   #     to check a key table, and counting that let the guide's Rust blocks go
   #     unbuilt. Hence the attribute in the pattern, not the call.
   local included
+  # `--exclude-dir=target` for the same reason `file_sizes` prunes it: five
+  # repositories set `SOURCE_ROOTS=(.)`, and `cargo package` extracts crates
+  # under `target/package/` carrying the same attributes as the real source.
+  #
   # `{ ...; } || true` because a repository whose prose pulls in no Rust at all
   # is not an error, and `pipefail` makes an unmatched `grep` one: `xpui-cpp`'s
   # gate died here on its first run with no message, because the exit status of
   # a command substitution is the exit status of its pipeline.
   included="$(
     { grep -rnoE '#!?[[:space:]]*\[[[:space:]]*doc[[:space:]]*=[[:space:]]*include_str!\("[^"]+"\)' \
-      --include='*.rs' "${SOURCE_ROOTS[@]}" || true; } \
+      --include='*.rs' --exclude-dir=target "${SOURCE_ROOTS[@]}" || true; } \
       | while IFS= read -r hit; do
           local_file="${hit%%:*}"
           rest="${hit#*:}"
@@ -817,9 +869,10 @@ prose_ignored_blocks() {
 # for in a commit message, never a way to land a file.
 #
 # There is deliberately no allow-list: an exempted file is how a limit becomes
-# decoration. Tests are exempt as a class — an integration test is a list of
-# cases, and `crates/xpui/tests/interactions.rs` is 955 lines of them
-# legitimately — so this looks only under `src/`.
+# decoration. Tests are exempt as a class, because an integration test is a
+# list of cases and a long list of cases is not a grab-bag — the framework's
+# `tests/interactions.rs` is thousands of lines of them, legitimately. So this
+# looks only under `src/`.
 MAX_SRC_LINES=400
 
 file_sizes() {
@@ -926,6 +979,13 @@ readmes_warn() {
 # somewhere other than its own definition. A helper counts because its caller
 # names it; a check counts because a dispatch names it; a function nothing
 # names at all fails.
+#
+# **That only works if each name appears once.** The first version let a check
+# be listed in three dispatch arms, so deleting `rust_format_check` from the
+# `check)` arm — the one CI runs — left two mentions and a green tick, with the
+# formatter no longer running. Hence `FORMAT_CHECK` and `FORMAT_FIX` below and
+# a single `gates` per repository: every check is written down exactly once,
+# and deleting it there takes its second mention with it.
 every_check_runs() {
   say "Every check defined here is dispatched"
 

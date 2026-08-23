@@ -36,7 +36,7 @@
 //!
 //! That granularity is the price of a seam this simple. Narrowing it means
 //! taking the display out rather than borrowing it, which is what
-//! [spec 08](https://github.com/XPUI-Framework/xpui-framework/blob/main/docs/specs/done/08-async-present.md) is about.
+//! spec 08 — *an asynchronous present* — is about.
 
 use core::cell::RefCell;
 
