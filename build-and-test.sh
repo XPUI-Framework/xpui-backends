@@ -57,6 +57,16 @@ lint_extra() {
   cargo clippy -p xpui-screenshot --no-default-features --all-targets -- -D warnings
 }
 
+test_extra_golden_off() {
+  # `--all-targets` above does **not** include doctests, and that gap let a
+  # README mounted as a doctest reference a `golden`-only function: the crate
+  # stopped compiling its own prose with the feature off, which is exactly the
+  # shape `xpui-simulator` consumes. One line, because the clippy run beside it
+  # has been guarding this configuration since spec 43 and could not see this.
+  say "Documented snippets, xpui-screenshot without its optional half"
+  cargo test -p xpui-screenshot --no-default-features --doc
+}
+
 test_extra() {
   # `embedded_graphics` has one test that only exists behind a feature, because
   # what it proves only exists behind that feature: that `Backend` is genuinely
@@ -64,6 +74,8 @@ test_extra() {
   # without this line `tests/sync.rs` compiles to nothing and never executes.
   say "Tests, with the backend's state guarded"
   cargo test -p xpui-embedded-graphics --features critical-section
+
+  test_extra_golden_off
 }
 
 # Where the FreeInkUI headers are, or nothing.

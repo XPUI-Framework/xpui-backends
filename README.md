@@ -15,6 +15,16 @@ panel?**
 
 ## Which crate you want
 
+```mermaid
+flowchart TD
+  q{"Does something<br/>already own your panel?"}
+  q -- "No — I have a DrawTarget" --> eg["embedded_graphics<br/>draws every pixel itself"]
+  q -- "Yes — a C++ firmware<br/>draws through FreeInkUI" --> fui["fui<br/>calls that library over a C ABI"]
+  eg --> chrome["xpui-chrome<br/>paints the components"]
+  fui --> abi["your firmware's<br/>own renderer"]
+```
+
+
 | | |
 |---|---|
 | [`embedded_graphics`](embedded_graphics/) | You have a `DrawTarget` — a driver crate, a display over SPI, a simulator window. The backend draws every pixel itself, through [`xpui-chrome`](https://github.com/XPUI-Framework/xpui-chrome) |
@@ -54,6 +64,51 @@ links the FreeInkUI shim's C++ into a host of its own.
 
 `fui`'s C++ stage needs the FreeInkUI headers and says so when they are
 missing. Everything else needs nothing but a Rust toolchain.
+
+## Where it sits
+
+Every arrow is a dependency in a `Cargo.toml`, and they all point inward
+toward `xpui`, which depends on nothing at all. That is the rule the
+organisation is arranged around: a backend can be written without the framework
+knowing it exists, and a firmware reaches whatever it needs directly rather
+than through whoever happens to sit above it.
+
+```mermaid
+flowchart BT
+  xpui["xpui<br/>the framework"]
+  chrome["xpui-chrome<br/>components"]
+  boards["xpui-boards<br/>seven devices"]
+  backends["xpui-backends<br/>two backends"]
+  simulator["xpui-simulator<br/>a window"]
+  gallery["xpui-gallery<br/>the app"]
+  rp2040["xpui-rp2040<br/>firmware"]
+  esp32["xpui-esp32<br/>firmware"]
+  cpp["xpui-cpp<br/>a C++ host"]
+  chrome --> xpui
+  boards --> xpui
+  backends --> xpui
+  backends --> chrome
+  simulator --> xpui
+  simulator --> chrome
+  simulator --> boards
+  simulator --> backends
+  gallery --> xpui
+  gallery --> chrome
+  gallery --> boards
+  gallery --> backends
+  gallery --> simulator
+  rp2040 --> xpui
+  rp2040 --> boards
+  rp2040 --> backends
+  rp2040 --> gallery
+  esp32 --> xpui
+  esp32 --> boards
+  esp32 --> backends
+  esp32 --> gallery
+  cpp --> xpui
+  cpp --> backends
+  style backends stroke-width:3px
+```
 
 ## License
 

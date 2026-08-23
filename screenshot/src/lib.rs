@@ -16,6 +16,24 @@
 //! Deliberately, so nobody commits a picture they never looked at. Re-bless
 //! with `UPDATE_SNAPSHOTS=1` and then actually open them.
 
+/// This crate's prose, compiled.
+///
+/// A README that does not build is worse than none — and this one shows the
+/// call that every pixel assertion in the organisation is made of.
+///
+/// **Gated on `golden` as well as `doctest`.** The snippet calls
+/// `assert_screenshot`, which the feature gates; without this the crate stops
+/// compiling its own doctests with the feature off — which is precisely the
+/// shape `xpui-simulator` consumes, and the one the gate's
+/// `--no-default-features` clippy run exists to protect. That run uses
+/// `--all-targets`, and `--all-targets` does not include doctests, so this
+/// went unnoticed until it was looked for.
+#[cfg(all(doctest, feature = "golden"))]
+mod guides {
+    #[doc = include_str!("../README.md")]
+    pub mod readme {}
+}
+
 pub mod framebuffer;
 #[cfg(feature = "golden")]
 pub mod golden;
