@@ -32,7 +32,15 @@ xpui-abi-check = { path = "abi-check" }
 # `features = ["golden"]` and says so at its own call site.
 xpui-screenshot = { path = "screenshot", default-features = false }
 
-# Shared across every repository so host, RISC-V and Xtensa builds agree.
+# What a `cargo build --release` of this repository alone produces.
+#
+# It is **not** what ships. A library's profile applies only when that library
+# is the top of the build; when a firmware links it, the firmware's workspace
+# sets the profile for everything in the graph. So this exists to make a local
+# release build resemble the real one, not to control it.
+#
+# The repositories that do produce a flashed artifact — `xpui-rp2040`,
+# `xpui-esp32`, `xpui-cpp` — use `opt-level = "z"` and say why there.
 [profile.release]
 opt-level = "s"
 lto = true

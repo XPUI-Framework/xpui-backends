@@ -54,3 +54,7 @@ links the FreeInkUI shim's C++ into a host of its own.
 
 `fui`'s C++ stage needs the FreeInkUI headers and says so when they are
 missing. Everything else needs nothing but a Rust toolchain.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Copyright (c) 2026 Thiago Holanda.

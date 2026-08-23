@@ -1,0 +1,19 @@
+# Pins the Rust toolchain for everyone, including CI.
+#
+# Without a pin, `cargo clippy -- -D warnings` breaks the moment a new stable
+# release adds a lint — on somebody else's unrelated pull request. Bumping this
+# file is then a deliberate change, reviewed like any other.
+#
+# To bump: raise `channel`, run `./build-and-test.sh`, fix whatever the new
+# clippy found, and commit the two together. Every repository in the
+# organisation carries this file with the same channel; they are bumped
+# together or they disagree about what a warning is.
+
+[toolchain]
+channel = "1.97.1"
+components = ["rustfmt", "clippy"]
+
+# The ESP32-C3, and the RP2040's Cortex-M0+. Listing them here means rustup
+# installs both on the first cargo call, so a new contributor does not need to
+# know the triples.
+targets = ["riscv32imc-unknown-none-elf", "thumbv6m-none-eabi"]

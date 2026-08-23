@@ -1,0 +1,40 @@
+# Clippy configuration for this repository.
+#
+# The gate runs `cargo clippy --workspace --all-targets -- -D warnings`, so
+# anything clippy reports is a failure. These keys tune what it reports, and
+# every repository in the organisation carries the same four values — a lint
+# that fires in one and not another is a difference nobody chose.
+
+# The OLDEST toolchain that has to compile this code, which is not the one in
+# `rust-toolchain.toml`: the ESP32-S3 builds with the esp-rs Xtensa fork, and
+# clippy runs on the host toolchain — so without this it happily suggests
+# constructs that build cannot compile.
+#
+# The fork is ahead of this number (`rustc +esp --version` reads 1.97.0-nightly
+# today), and the floor stays at 1.95 deliberately: the fork moves when
+# Espressif rebases it, not when we do, and a floor that tracks it would break
+# this file every time it lagged. Raise it only when something here genuinely
+# needs a newer construct.
+msrv = "1.95"
+
+# Left at the default `true`, clippy stays quiet about anything `pub`, which is
+# most of a UI framework — so it is turned off, and a lint that would change a
+# public signature gets acted on.
+#
+# The monorepo's reason for this was "no downstream users outside this
+# repository", and the split falsified it: `xpui` has nine consumers by git URL
+# now, and a breaking change costs a `cargo update` in five of them. The reason
+# that survives is the banner on every README — the API moves deliberately and
+# breaks without notice, so a warning about breaking it is a warning about the
+# thing we are doing on purpose.
+avoid-breaking-exported-api = false
+
+# The firmware has 380 KB of RAM and no allocator worth stressing. A large
+# value passed or returned by move is a memcpy the compiler may not elide, so
+# flag types that outgrow a couple of pointers-worth of stack.
+pass-by-value-size-limit = 16
+
+# Widget builders are deliberately fluent (`Stepper::new(v).on_change(..)`),
+# which produces long `impl View` chains. The default of 250 fires on ordinary
+# layout code; this still catches genuinely unreadable types.
+type-complexity-threshold = 500
