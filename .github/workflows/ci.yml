@@ -1,0 +1,101 @@
+name: CI
+
+# Every push to `main`, and every pull request. The job below runs
+# `./build-and-test.sh`, which is the same script a developer runs — so a green
+# tick here means exactly what a green run means locally.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A second push does not pay for the first.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Backends (format, lint, test)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      # The organisation's repositories are private, and a workflow's built-in
+      # GITHUB_TOKEN reaches only the repository it runs in. Cargo fetches the
+      # siblings over HTTPS, so the fetch is rewritten to carry a token that
+      # can read them. Without this the failure is a 404 that reads like a typo.
+      - name: Reach the organisation's private repositories
+        run: |
+          git config --global \
+            url."https://x-access-token:${{ secrets.XPUI_CI_TOKEN }}@github.com/".insteadOf \
+            "https://github.com/"
+
+      # `.clang-format` uses options that need 21 or newer, and Ubuntu ships 18.
+      # There is no `clang-format-21` in its repositories, so apt is not an
+      # option. **No version fallback**: a fallback quietly installed 18 once
+      # and left the failure to surface three steps later as "too old".
+      - name: Install clang-format
+        run: |
+          pipx install "clang-format==21.1.8" \
+            || python3 -m pip install --user --break-system-packages "clang-format==21.1.8"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Show clang-format version
+        run: clang-format --version
+
+      # The C++ half needs the SDK it binds to. The gate skips that check with a
+      # note when the SDK is absent, which is right for a laptop and wrong here
+      # — passed explicitly so a skip on CI is impossible.
+      #
+      # **Pinned to a revision**, in one file CMake reads too: a revision
+      # written down twice is a revision that will disagree with itself.
+      - name: Fetch the FreeInk SDK
+        run: |
+          revision="$(cat fui/freeink-sdk.rev)"
+          git clone --filter=blob:none --no-checkout \
+            https://github.com/Free-Ink/freeink-sdk.git /tmp/freeink-sdk
+          git -C /tmp/freeink-sdk checkout "$revision"
+          echo "FREEINK_SDK_INCLUDE=/tmp/freeink-sdk/libs/ui/FreeInkUI/include" >> "$GITHUB_ENV"
+
+      # `rust-toolchain.toml` pins the channel, the components and these
+      # targets, so rustup installs them on the first cargo call. They are
+      # named again because the gate *skips* a lint whose target is missing
+      # rather than failing — right on a laptop, wrong here.
+      - name: Install Rust
+        run: |
+          rustup show active-toolchain
+          rustup target add riscv32imc-unknown-none-elf
+          rustup target add thumbv6m-none-eabi
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.rustup/toolchains
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: cargo-${{ runner.os }}-
+
+      # ---- the gate --------------------------------------------------------
+      #
+      # One step, running the same script a developer runs, because two lists
+      # of checks drift. Anything CI needs that a laptop does not is setup,
+      # above; anything that decides whether the code is good is in the script,
+      # where it can be run before pushing.
+      - name: Gate
+        run: ./build-and-test.sh check
+
+      # A failed screenshot writes expected | actual | differences side by side,
+      # so a failure here can be looked at rather than guessed at.
+      - name: Keep the screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: |
+            target/diff/
+            target/screenshots/
+          if-no-files-found: ignore
