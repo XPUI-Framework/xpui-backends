@@ -46,7 +46,8 @@ while app.is_running() {
 }
 ```
 
-It supplies `Canvas` and `TextMetrics` itself, `InputSource` and `Clock` from
+It supplies `Canvas` and `TextMetrics` itself — the contract for all five is
+[`crates/xpui/docs/host.md`](../../xpui/docs/host.md) — `InputSource` and `Clock` from
 whatever you feed it — bar `has_left_right_keys`, which is a fact about the
 hardware and so is **told** to it: `with_left_right_keys(true)`. Left unsaid it
 answers `false`, which costs a keystroke on a device that has the pair and is

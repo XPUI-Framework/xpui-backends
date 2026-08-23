@@ -50,7 +50,8 @@ this crate.
 
 ## The seam was already there
 
-`xpui` reaches a backend through five traits, and one of them — `Chrome` — says
+`xpui` reaches a backend through
+[five traits](../../../xpui/docs/host.md), and one of them — `Chrome` — says
 outright that the host draws this part. Eight calls: a list, a dialog, a slider,
 a progress bar, a header, a sub-header, a hint bar, a scroll indicator
 ([`host/chrome.rs`](../../../xpui/src/host/chrome.rs)).
