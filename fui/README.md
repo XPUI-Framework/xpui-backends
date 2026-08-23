@@ -1,5 +1,8 @@
 # `xpui-fui`
 
+> ⚠️ **Under heavy development.** Not production-ready. The API can break
+> without notice. Use at your own risk.
+
 An [`xpui`](../../xpui/) backend that draws through **FreeInkUI**.
 
 FreeInkUI is a header-only C++ component library for e-ink firmware. It already

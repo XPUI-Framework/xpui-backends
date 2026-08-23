@@ -1,5 +1,8 @@
 # xpui on FreeInkUI
 
+> ⚠️ **Under heavy development.** Not production-ready. The API can break
+> without notice. Use at your own risk.
+
 `xpui_fui.cpp` implements the C ABI in `xpui_fui.h` against the FreeInk SDK's
 UI library. It binds to `freeink::ui::DisplayTarget`, which needs nothing but a
 raw 1-bit framebuffer and ships its own Noto Sans bitmap font, so this file is

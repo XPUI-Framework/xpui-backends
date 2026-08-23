@@ -1,5 +1,8 @@
 # `xpui-embedded-graphics`
 
+> ⚠️ **Under heavy development.** Not production-ready. The API can break
+> without notice. Use at your own risk.
+
 An [`xpui`](../../xpui/) backend that draws through any `embedded-graphics`
 `DrawTarget` — which is most of the embedded Rust display ecosystem: e-paper
 panels, SSD1306 and friends, colour TFTs, and the desktop simulator.
@@ -67,12 +70,11 @@ colour TFT looking monochrome, and swapping the palette inverts the panel with
 no change to any screen. What it will not do is let a screen ask for a third
 colour, because the framework has no way to.
 
-## Type
+## The faces it ships
 
-The faces are U8g2's Helvetica, through
-[`u8g2-fonts`](https://crates.io/crates/u8g2-fonts): one family, a real bold at
-every size, and the full 8-bit charset — so `Ambiência` renders as itself
-rather than as a row of replacement glyphs.
+The full 8-bit charset, so `Ambiência` renders as itself rather than as a row
+of replacement glyphs. Which family, and how to bring your own, is
+[below](#type).
 
 `Fonts::for_metrics` picks a set from the chrome's own list row height, so a
 board that scales its chrome up gets type to match: 30 pixels of interface text
@@ -113,47 +115,9 @@ button reported as pressed on every frame re-fires whatever it is on.
 
 ## Screenshot tests
 
-```toml
-[dev-dependencies]
-xpui-screenshot = "0.1"
-```
-
-A separate crate, because it is `std`, it writes files, and this one builds for
-bare metal. `Framebuffer` is a plain 1-bit `DrawTarget` with no window and no
-hardware, so a screen can be rendered and asserted on in an ordinary
-`cargo test`:
-
-```rust,no_run
-# use xpui_eg::{Backend, Palette};
-# use xpui_screenshot::{Framebuffer, assert_screenshot};
-# let backend = Backend::new(Framebuffer::new(480, 800), Palette::INK_IS_ON);
-backend.with_display(|frame| {
-    assert_screenshot("my_screen", frame);      // against a committed PNG
-    assert!(frame.ink_in(0, 0, 480, 56) > 0);   // and what a picture cannot say
-});
-```
-
-`assert_screenshot` compares the whole panel against
-`tests/screenshots/my_screen.png` in the crate being tested, pixel for pixel.
-The first run writes the golden and fails, so that nobody commits a picture
-they never looked at; `UPDATE_SNAPSHOTS=1` rewrites it afterwards. A mismatch
-prints an ASCII view marking every block that changed and writes
-`target/diff/my_screen.png` — expected, actual and the differences, side by
-side.
-
-That is how this crate's own tests work — see `tests/screenshots.rs`.
-
-`check_screenshot` is the same comparison handing back its report as
-`Result<(), String>` rather than panicking with it, for a test that captures
-many frames and wants to name every one that moved rather than stopping at the
-first. A broken harness — a golden that will not decode, a directory that will
-not take a file — still panics through either of them.
-[`examples/gallery`](../../../examples/gallery/) renders nine screens on seven
-boards that way, so one token moved by one pixel names every board it reached
-rather than the first.
-
-`write_bmp` and `thumbnail` are still there, and are for looking at a frame
-rather than asserting on one. Nothing compares them.
+Render to memory, compare against a committed PNG, pixel for pixel — no panel
+and no window. [`docs/screenshots.md`](docs/screenshots.md) is how, including
+why a first run writes the golden **and fails**.
 
 ## One thing worth knowing
 

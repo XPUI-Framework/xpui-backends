@@ -116,4 +116,6 @@ pub use xpui_chrome::{Labels, Metrics};
 mod guides {
     #[doc = include_str!("../README.md")]
     pub mod readme {}
+    #[doc = include_str!("../docs/screenshots.md")]
+    pub mod screenshots {}
 }
