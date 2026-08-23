@@ -7,7 +7,9 @@ The two things that put `xpui` pixels on a panel, and the two helpers they
 need.
 
 A backend answers five traits — `Canvas`, `TextMetrics`, `Chrome`,
-`InputSource`, `Clock` — and the framework calls nothing else. Which of the two
+`InputSource`, `Clock` — and the framework calls nothing else. In practice you
+write four: `Chrome` comes from a macro, and the sixth trait a running screen
+needs, `Navigator`, is the application's rather than a backend's. Which of the two
 below you want depends on one question: **does something already own your
 panel?**
 
@@ -27,7 +29,7 @@ is that somebody choosing a backend sees both and picks.
 ## Writing a third
 
 [**writing-a-backend.md**](https://github.com/XPUI-Framework/xpui-framework/blob/main/docs/writing-a-backend.md)
-is the path through all six traits, and the obligations the compiler cannot
+is the path through them, and the obligations the compiler cannot
 check are on the methods that carry them — `draw_text` takes a top-left origin,
 a font id is a hash of the face's bytes. Both are wrong in a way that compiles.
 
