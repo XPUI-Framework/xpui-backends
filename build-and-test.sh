@@ -168,6 +168,7 @@ gates() {
   readmes_warn
   prose_is_compiled
   doc_paths
+  commands_resolve
   ffi_symbols_agree
   cpp_snippets_compile
   lint

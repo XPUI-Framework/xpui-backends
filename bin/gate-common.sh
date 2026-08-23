@@ -965,6 +965,190 @@ readmes_warn() {
   fi
 }
 
+# Every command a document gives names something that is there.
+#
+# `prose_is_compiled` reads ```rust, `cpp_snippets_compile` reads ```cpp,
+# `doc_paths` reads links. **Nothing read a ```bash block**, and it showed:
+# step 2 of the framework's beginner tutorial was `cargo run -p xpui-tutorial`
+# in a repository whose only package is `xpui`, and the RP2040's flash command
+# named `examples/rp2040/…` in a repository with no `examples/` at all. Twenty
+# of them, across five repositories, every one written for a monorepo.
+#
+# It checks what it can know without running anything:
+#
+#   - `-p NAME` / `--package NAME` — a package in this workspace
+#   - `--manifest-path P`, `-S P`, `-C P`, `--out-dir P`, `open P` — P is there
+#   - the **first component** of any relative path anywhere in the command,
+#     which is what `examples/rp2040/target/…` was wrong at, inside a flash
+#     command whose verb this check otherwise leaves alone
+#
+# **It runs nothing.** A gate that executed a documented command would flash a
+# board. Two kinds of command are left alone and counted separately, because a
+# single number cannot say which is growing: those whose verb belongs to a
+# device or a package manager, and those in a block that has walked out of this
+# tree with `cd`.
+COMMANDS_NOT_OURS="pio platformio elf2uf2-rs probe-rs espflash esptool espup brew apt apt-get rustup curl wget gh ssh scp docker pipx"
+
+commands_resolve() {
+  say "Every documented command names something that is there"
+
+  local packages
+  packages="$(cargo metadata --no-deps --format-version 1 2>/dev/null \
+    | tr ',' '\n' | sed -n 's/.*"name":"\([^"]*\)".*/\1/p' | sort -u)"
+  if [ -z "${packages}" ]; then
+    echo "ERROR: cargo metadata named no package, so every -p below would" >&2
+    echo "       pass for the wrong reason." >&2
+    return 1
+  fi
+
+  local problems=0 not_ours=0 elsewhere_blocks=0 elsewhere_lines=0 page
+
+  while IFS= read -r page; do
+    # A finished specification is a record of what was asked, and "what existed
+    # already" stays in the past tense it was written in — so `done/` is
+    # exempt. The live queue is not: a spec still in flight names commands
+    # somebody is meant to run.
+    case "${page}" in
+      docs/specs/done/* | */docs/specs/done/*) continue ;;
+    esac
+
+    # `block:line:text`. The block number is what keeps a `cd` from leaking:
+    # walking out of the tree ends **that block**, not the rest of the page.
+    local rows
+    rows="$(awk '
+      /^[ \t]*(```|~~~)[ \t]*(bash|sh|shell|console)[ \t]*$/ { inside = 1; block++; next }
+      /^[ \t]*(```|~~~)[ \t]*$/                              { inside = 0; next }
+      inside { print block ":" NR ":" $0 }
+    ' "${page}")"
+    [ -n "${rows}" ] || continue
+
+    local row block line text verb gone_block=""
+    while IFS= read -r row; do
+      block="${row%%:*}"
+      row="${row#*:}"
+      line="${row%%:*}"
+      text="${row#*:}"
+
+      if [ "${gone_block}" = "${block}" ]; then
+        elsewhere_lines=$((elsewhere_lines + 1))
+        continue
+      fi
+
+      text="${text#\$ }"
+      text="${text%%#*}"
+      [ -n "${text//[[:space:]]/}" ] || continue
+
+      # `sudo` is a prefix, not a verb: looking only at $1 would skip the
+      # command it is running, along with every path and package in it.
+      verb="$(printf '%s' "${text}" | awk '{ print ($1 == "sudo") ? $2 : $1 }')"
+      local where
+
+      # A block may legitimately walk somewhere else — "clone the gallery and
+      # run it there" is the honest way to show a command this repository
+      # cannot run. That ends **this block**; the next one starts here again.
+      #
+      # Checked before the words, because `cd elsewhere && cargo run -p x`
+      # puts both on one line and the `-p` belongs to the elsewhere.
+      #
+      # `..` and `../…` leave by definition: `path_exists_exactly` resolves a
+      # leading `..` textually and pops to the repository root, so asking it
+      # would answer "yes, that is here".
+      if [ "${verb}" = "cd" ]; then
+        where="$(printf '%s' "${text}" | awk '{ print ($1 == "cd") ? $2 : $3 }')"
+        case "${where}" in
+          "" | . | ./*) ;;
+          .. | ../*) gone_block="${block}"; elsewhere_blocks=$((elsewhere_blocks + 1)) ;;
+          *)
+            if ! path_exists_exactly "${where}"; then
+              gone_block="${block}"
+              elsewhere_blocks=$((elsewhere_blocks + 1))
+            fi
+            ;;
+        esac
+        continue
+      fi
+
+      # One pass over the words. A greedy `sed` was tried first and read only
+      # the *last* `-p` on a line, so `-p bogus -p real` passed; and it never
+      # ran at all on a backslash continuation, whose first word is `-p`
+      # rather than `cargo`. Both are gone with the flag-and-value shape below.
+      local word previous="" head
+      set -f          # a documented `*` is not a glob against this directory
+      for word in ${text}; do
+        case "${previous}" in
+          # Flags whose value is a package.
+          -p | --package)
+            if ! printf '%s\n' "${packages}" | grep -qx "${word}"; then
+              printf '  %s:%s: `-p %s` is not a package in this workspace\n' \
+                "${page}" "${line}" "${word}" >&2
+              problems=$((problems + 1))
+            fi
+            previous="${word}"; continue ;;
+          # Flags whose value is a path.
+          --manifest-path | -S | -C | --out-dir)
+            if ! path_exists_exactly "${word}"; then
+              printf '  %s:%s: %s %s does not exist\n' \
+                "${page}" "${line}" "${previous}" "${word}" >&2
+              problems=$((problems + 1))
+            fi
+            previous="${word}"; continue ;;
+          # Flags whose value only looks like a path.
+          --features | -F | --target | --bin | --example | --board)
+            previous="${word}"; continue ;;
+        esac
+        previous="${word}"
+
+        case "${word}" in
+          -* | /* | '~'* | *'$'* | \"* | \'* | *'*'* | *'<'* | *'>'* | *=* | *'{'* | *'}'* )
+            continue ;;
+          */*) ;;
+          *) continue ;;
+        esac
+        head="${word%%/*}"
+        case "${head}" in
+          . | .. | '' | target | http* ) continue ;;
+        esac
+        if ! path_exists_exactly "${head}"; then
+          printf '  %s:%s: `%s` names %s/, which is not in this repository\n' \
+            "${page}" "${line}" "${word}" "${head}" >&2
+          problems=$((problems + 1))
+        fi
+      done
+      set +f
+
+      # `open PATH`, which is how a reader is told to look at a screenshot. A
+      # generated directory is not in the tree until something has run.
+      if [ "${verb}" = "open" ]; then
+        local shown
+        shown="$(printf '%s' "${text}" | awk '{print $2}')"
+        case "${shown}" in
+          target/* | */target/* | "" | -*) ;;
+          *)
+            if ! path_exists_exactly "${shown%/}"; then
+              printf '  %s:%s: open %s does not exist\n' "${page}" "${line}" "${shown}" >&2
+              problems=$((problems + 1))
+            fi
+            ;;
+        esac
+      fi
+
+      case " ${COMMANDS_NOT_OURS} " in
+        *" ${verb} "*) not_ours=$((not_ours + 1)) ;;
+      esac
+    done <<< "${rows}"
+  done < <(tracked_markdown)
+
+  if [ "${problems}" -gt 0 ]; then
+    echo "ERROR: ${problems} documented command(s) above name something that is" >&2
+    echo "       not here. A command that belongs to another repository should" >&2
+    echo "       say so with a \`cd\`, or link to it, rather than be printed as" >&2
+    echo "       if it ran here." >&2
+    return 1
+  fi
+  printf '    clean (%s for a device or a package manager; %s line(s) in %s block(s) that walked elsewhere)\n' \
+    "${not_ours}" "${elsewhere_lines}" "${elsewhere_blocks}"
+}
+
 # Every check this repository defines is one this repository runs.
 #
 # It replaces `ownership_is_complete`, which asked *which repository* a check

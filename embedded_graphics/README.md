@@ -50,7 +50,7 @@ while app.is_running() {
 ```
 
 It supplies `Canvas` and `TextMetrics` itself — the contract for all five is
-[`crates/xpui/docs/host.md`](https://github.com/XPUI-Framework/xpui-framework/blob/main/docs/host.md) — `InputSource` and `Clock` from
+[`docs/host.md`](https://github.com/XPUI-Framework/xpui-framework/blob/main/docs/host.md) — `InputSource` and `Clock` from
 whatever you feed it — bar `has_left_right_keys`, which is a fact about the
 hardware and so is **told** to it: `with_left_right_keys(true)`. Left unsaid it
 answers `false`, which costs a keystroke on a device that has the pair and is
@@ -178,5 +178,5 @@ framework instead: the backend picks it up at the top of the next
 `begin_frame`, which is the one moment nothing has been measured against the
 face it replaces.
 
-See `examples/gallery/src/typeface.rs` for a picker built on it, and
-`examples/gallery/src/fonts.rs` for what two extra families cost in flash.
+See `xpui-gallery`'s `gallery/src/typeface.rs` for a picker built on it, and
+`xpui-gallery`'s `gallery/src/fonts.rs` for what two extra families cost in flash.

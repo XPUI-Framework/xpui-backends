@@ -7,7 +7,7 @@
 //!
 //! The backend stores what it was told and nothing more. Whether the caller
 //! told it the truth about a particular device is the caller's test, and it
-//! lives in the conformance suite: `examples/gallery/tests/capabilities.rs`.
+//! lives in the conformance suite: `xpui-gallery`'s `gallery/tests/capabilities.rs`.
 
 use xpui::host::InputSource;
 use xpui_eg::{Backend, Palette};
