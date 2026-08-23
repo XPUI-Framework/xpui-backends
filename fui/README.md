@@ -25,7 +25,7 @@ a link error at best and a corrupt call frame at worst.
 its symbols, and compares **signatures** — not just names. Two parameters
 swapped still link, because C has no mangling to disagree with, and the symptom
 is a rendering fault somewhere unrelated; that is the failure it exists for.
-`ffi_symbols_agree()` in `build-and-test.sh` covers the half it cannot read:
+`symbols_agree` in `xtask/src/main.rs` covers the half it cannot read:
 this header against the C++ that defines it.
 
 The boundary runs both ways: `cpp/xpui_screen.h` declares six lifecycle entry

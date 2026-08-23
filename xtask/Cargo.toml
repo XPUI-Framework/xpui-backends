@@ -1,0 +1,18 @@
+# This repository's gate, as a program rather than a thousand lines of
+# shell.  It holds only what this repository checks. It holds the FreeInkUI
+# shim, so it carries the C++ stages that seven of the ten do not.
+#
+# No dependencies, on purpose: a gate that fails because something it
+# fetched moved is a gate that has to be argued with before it can be
+# believed.
+[package]
+name = "xtask"
+description = "The gate for xpui-backends: format, lint, test, the prose, and the C++ boundary"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+authors = ["Thiago Holanda <unnamedd@gmail.com>"]
+repository = "https://github.com/XPUI-Framework/xpui-backends"
+publish = false
+
+[dependencies]

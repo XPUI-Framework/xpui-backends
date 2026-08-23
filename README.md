@@ -62,6 +62,10 @@ links the FreeInkUI shim's C++ into a host of its own.
 ./build-and-test.sh
 ```
 
+The checks themselves are in [`xtask/`](xtask/) — this repository's own list,
+in Rust, holding nothing it does not run. `./build-and-test.sh fix` formats
+in place first.
+
 `fui`'s C++ stage needs the FreeInkUI headers and says so when they are
 missing. Everything else needs nothing but a Rust toolchain.
 

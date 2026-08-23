@@ -203,3 +203,7 @@ dependencies = [
  "embedded-graphics",
  "png",
 ]
+
+[[package]]
+name = "xtask"
+version = "0.1.0"

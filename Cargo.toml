@@ -10,7 +10,10 @@
 # is `fui`'s boundary and the C++ host's; the second is the host framebuffer
 # and its golden images, which is how a backend proves pixels without a panel.
 [workspace]
-members = ["abi-check", "embedded_graphics", "fui", "screenshot"]
+# `xtask` is the gate. A member rather than a separate workspace so one
+# `cargo test` reaches its tests, and so the size ratchet counts its source
+# like any other.
+members = ["abi-check", "embedded_graphics", "fui", "screenshot", "xtask"]
 resolver = "3"
 
 [workspace.package]

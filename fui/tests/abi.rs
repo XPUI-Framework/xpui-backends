@@ -1,6 +1,6 @@
 //! Every C symbol, and whether both sides agree about its **types**.
 //!
-//! `ffi_symbols_agree()` in `build-and-test.sh` checks that the names line up.
+//! `symbols_agree` in the gate's `xtask/` checks that the names line up.
 //! Names are the easy half. A parameter reordered on one side and not the
 //! other still links — C has no mangling to disagree with — and the result is
 //! a corrupt call frame: the shim reads a width where a height was passed, and

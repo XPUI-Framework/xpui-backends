@@ -25,7 +25,7 @@ Text lands at transposed coordinates, or a pointer is read as an integer and
 the panel fills with noise. Nothing in either toolchain will tell you.
 
 This is what tells you. It compares parameter *types and order*, not just
-presence — which is the half `ffi_symbols_agree` in the gate cannot see, and
+presence — which is the half the gate's `symbols_agree` cannot see, and
 the half a link error never reaches.
 
 ## Using it
@@ -54,7 +54,8 @@ Five boundaries across two repositories, each checked where it is owned:
 
 Note what is **not** in that list: `xpui_fui.h` against `cpp/xpui_fui.cpp`,
 the C++ shim itself. No signature checker reads C++ here — that pair gets
-`ffi_symbols_agree`, which compares which symbols exist and not what they are.
+`symbols_agree` in `xtask/`, which compares which symbols exist and not what
+they are.
 The third row above is the same header against the *Rust* host doubles, which
 is a different guarantee: it keeps the doubles honest, not the shim.
 
