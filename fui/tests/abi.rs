@@ -16,18 +16,15 @@
 //! | `cpp/xpui_fui.h` | `src/raw.rs` | C++ |
 //! | `cpp/xpui_fui.h` | `src/testing/stubs.rs` | Rust, for tests |
 //! | `cpp/xpui_screen.h` | `src/lifecycle.rs` | Rust |
-//! | `examples/cpp_host/cpp/xpui_host.h` | `examples/cpp_host/src/raw.rs` | C++ |
-//! | `examples/cpp_host/cpp/xpui_app.h` | `examples/cpp_host/src/lib.rs`, plus `src/lifecycle.rs` for what `register_screen!` generates | Rust |
 //!
-//! The last two are read across a crate boundary, which is what [`sibling`]
-//! is for and what its doc comment argues about.
+//! Two more pairs cross into `xpui-cpp` — the host's own header against the
+//! Rust that calls it, and what the application exports against the header
+//! that declares it. They live in that repository, beside the files they read,
+//! because a repository checks the boundary it owns.
 
 use std::path::{Path, PathBuf};
 
-use xpui_abi_check::{
-    Boundary, Signatures, assert_agree, signatures_from_c, signatures_from_register_screen,
-    signatures_from_rust,
-};
+use xpui_abi_check::{Boundary, assert_agree, signatures_from_c, signatures_from_rust};
 
 // -- this boundary ----------------------------------------------------------
 
@@ -49,10 +46,9 @@ const FUI: Boundary<'_> = Boundary {
 
 /// A boundary with no typedef of its own and nothing the Rust side leaves out.
 ///
-/// Three pairs are this shape: the lifecycle, which is entirely inside this
-/// crate, and the C++ host's two. They share a constant because they share a
-/// description, not because they belong to the same thing — the host's two
-/// move out under spec 52 and this one does not.
+/// One pair here is this shape: the lifecycle, which is entirely inside this
+/// crate. The C++ host's two were the others; they moved to the repository
+/// that owns them.
 const PLAIN: Boundary<'_> = Boundary {
     prefix: "xpui_",
     skip: &[],
@@ -70,35 +66,6 @@ const PLAIN: Boundary<'_> = Boundary {
 /// and read nothing, which is the failure a checker must not have.
 fn own(relative: &str) -> (String, PathBuf) {
     read(Path::new(env!("CARGO_MANIFEST_DIR")).join(relative))
-}
-
-/// A file belonging to another crate in the same workspace.
-///
-/// Walks up for the manifest that declares a `[workspace]`, rather than
-/// counting levels: a depth that is wrong resolves somewhere instead of
-/// failing, and a checker that reads nothing reports agreement it never
-/// established.
-///
-/// **This is the seam.** The two pairs below belong to `examples/cpp_host` and
-/// are only here because that crate sets `test = false` — every `xpui_host_*`
-/// symbol it calls is defined by the C++ half, so a harness there could link
-/// only against doubles, a fourth place for the ABI to rot. When it becomes
-/// its own repository they move to a package beside it that depends on
-/// [`xpui_abi_check`] and not on the crate itself. See `docs/specs/done/42-an-abi-check-that-survives-a-move.md`.
-fn sibling(relative: &str) -> (String, PathBuf) {
-    let mut root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    loop {
-        let manifest = root.join("Cargo.toml");
-        if std::fs::read_to_string(&manifest).is_ok_and(|text| text.contains("[workspace]")) {
-            return read(root.join(relative));
-        }
-        root = root.parent().unwrap_or_else(|| {
-            panic!(
-                "no [workspace] manifest above {}, so {relative} cannot be found",
-                env!("CARGO_MANIFEST_DIR")
-            )
-        });
-    }
 }
 
 fn read(path: PathBuf) -> (String, PathBuf) {
@@ -146,38 +113,6 @@ fn the_lifecycle_agrees_with_the_rust_that_defines_it() {
         &signatures_from_rust(&rust, &PLAIN),
     );
 }
-
-#[test]
-fn what_the_host_answers_agrees_with_what_rust_asks_for() {
-    let (header, header_path) = sibling("examples/cpp_host/cpp/xpui_host.h");
-    let (rust, _) = sibling("examples/cpp_host/src/raw.rs");
-
-    assert_agree(
-        "xpui_host.h and examples/cpp_host/src/raw.rs",
-        &signatures_from_c(&header, &header_path, &PLAIN),
-        &signatures_from_rust(&rust, &PLAIN),
-    );
-}
-
-#[test]
-fn what_the_application_exports_agrees_with_its_header() {
-    let (header, header_path) = sibling("examples/cpp_host/cpp/xpui_app.h");
-    let (rust, _) = sibling("examples/cpp_host/src/lib.rs");
-    let (lifecycle, _) = own("src/lifecycle.rs");
-
-    // The factories are generated, so no Rust source spells them out. Their
-    // signature comes from the macro's own body, with `$factory` standing in
-    // for each name it was invoked with.
-    let mut declared: Signatures = signatures_from_rust(&rust, &PLAIN);
-    declared.extend(signatures_from_register_screen(&lifecycle, &rust, &PLAIN));
-
-    assert_agree(
-        "xpui_app.h and examples/cpp_host/src/lib.rs",
-        &signatures_from_c(&header, &header_path, &PLAIN),
-        &declared,
-    );
-}
-
 /// Every file the five pairs above name, and whether it is there.
 ///
 /// `assert_agree` refuses an empty parse, so a boundary that read nothing
@@ -193,19 +128,8 @@ fn every_boundary_names_a_file_that_is_there() {
         "src/testing/stubs.rs",
         "src/lifecycle.rs",
     ];
-    let theirs = [
-        "examples/cpp_host/cpp/xpui_host.h",
-        "examples/cpp_host/cpp/xpui_app.h",
-        "examples/cpp_host/src/raw.rs",
-        "examples/cpp_host/src/lib.rs",
-    ];
-
     for relative in mine {
         let (text, path) = own(relative);
-        assert!(!text.trim().is_empty(), "{} is empty", path.display());
-    }
-    for relative in theirs {
-        let (text, path) = sibling(relative);
         assert!(!text.trim().is_empty(), "{} is empty", path.display());
     }
 }

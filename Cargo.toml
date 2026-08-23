@@ -1,0 +1,40 @@
+# The two backends, and the two test utilities they own.
+#
+# A backend teaches `xpui` how to paint. These two are the shapes a third will
+# be: `xpui-embedded-graphics` hand-writes four host traits and takes `Chrome`
+# from a macro, `xpui-fui` hand-writes all five over a C ABI and depends on
+# nothing but the framework.
+#
+# `xpui-abi-check` and `xpui-screenshot` are here because these crates own
+# them: the first compares a C header against the Rust that answers it, which
+# is `fui`'s boundary and the C++ host's; the second is the host framebuffer
+# and its golden images, which is how a backend proves pixels without a panel.
+[workspace]
+members = ["abi-check", "embedded_graphics", "fui", "screenshot"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+authors = ["Thiago Holanda <unnamedd@gmail.com>"]
+repository = "https://github.com/XPUI-Framework/xpui-backends"
+
+[workspace.dependencies]
+# Git dependencies, not versions: nothing is published, and a fresh clone of
+# this repository has to build without its siblings on disk.
+xpui = { git = "https://github.com/XPUI-Framework/xpui-framework", branch = "main" }
+xpui-chrome = { git = "https://github.com/XPUI-Framework/xpui-chrome", branch = "main" }
+
+xpui-abi-check = { path = "abi-check" }
+# `default-features = false` here so a member that only wants `Framebuffer`
+# gets no image codec. Anything comparing against a committed PNG asks for
+# `features = ["golden"]` and says so at its own call site.
+xpui-screenshot = { path = "screenshot", default-features = false }
+
+# Shared across every repository so host, RISC-V and Xtensa builds agree.
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
