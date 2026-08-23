@@ -150,8 +150,9 @@ impl Fonts {
     /// fall back to, draw the same string differently and must not claim the
     /// same id for it.
     ///
-    /// Hashing the name costs a dozen byte operations, against a glyph lookup
-    /// for every character that follows. See [`family`].
+    /// The family's name is hashed here, on every call, and blended with the
+    /// tier's own id. A dozen byte operations against a glyph lookup for every
+    /// character that follows, so it is not worth caching.
     pub fn id(&self, role: FontRole) -> FontId {
         blend(self.tier(role).id, self.family)
     }

@@ -82,14 +82,15 @@ impl<D: DrawTarget> Canvas for Backend<D> {
     /// Text from its top-left, which is the convention the whole framework
     /// lays out with — a UI test resolves tap targets from the same origin.
     ///
-    /// u8g2 draws from a baseline, so the origin is converted through
-    /// [`fonts::baseline_offset`], which is chosen so every glyph in the face
-    /// lands inside `[y, y + line_height)`.
+    /// u8g2 draws from a baseline, so the origin is converted by a per-face
+    /// offset chosen so every glyph in that face lands inside
+    /// `[y, y + line_height)`.
     ///
-    /// Painted piece by piece through [`fonts::pieces`] — the same walk
-    /// [`fonts::text_width`] measures with, so what lands on the panel occupies
-    /// exactly what was reserved for it. A string the face can draw whole is
-    /// one piece and one call, which is every ordinary label.
+    /// Painted piece by piece through [`pieces`](crate::pieces), advancing by
+    /// [`advance`](crate::advance) after each — which is exactly what measuring
+    /// the string sums, so what lands on the panel occupies what was reserved
+    /// for it. A string the face can draw whole is one piece and one call,
+    /// which is every ordinary label.
     fn draw_text(&self, origin: Point, text: &str, font: FontId, style: FontStyle) {
         let resolved = self.fonts().face(font, style);
         let colour = FontColor::Transparent(self.palette.ink);

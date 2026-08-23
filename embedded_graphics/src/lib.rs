@@ -1,5 +1,5 @@
 //! An [`xpui`] backend that draws through any `embedded-graphics`
-//! [`DrawTarget`](embedded_graphics::draw_target::DrawTarget).
+//! [`DrawTarget`].
 //!
 //! That covers most of the embedded Rust display ecosystem: e-paper panels,
 //! SSD1306 and friends, colour TFTs, and the desktop simulator.

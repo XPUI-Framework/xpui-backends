@@ -6,7 +6,7 @@
 //! than in `xpui` because they are the C boundary, and this crate is the one
 //! that has a C boundary.
 //!
-//! Declared for C++ in [`cpp/xpui_screen.h`](../../cpp/xpui_screen.h). That
+//! Declared for C++ in [`cpp/xpui_screen.h`](../cpp/xpui_screen.h). That
 //! header and this file are two of the three places every symbol here exists;
 //! the third is the host that calls them.
 //!
