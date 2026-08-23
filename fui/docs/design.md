@@ -41,7 +41,7 @@ of them.
 
 **`xpui` is a declarative layer.** A screen describes a tree and receives typed
 messages; the framework owns measurement, focus, input routing and repaint (see
-[architecture.md](../../../xpui/docs/architecture.md)). It owns *how a screen is
+[architecture.md](https://github.com/XPUI-Framework/xpui-framework/blob/main/crates/xpui/docs/architecture.md)). It owns *how a screen is
 written*.
 
 FreeInkUI has no equivalent of `body()`/`update()`. `xpui` has no equivalent of
@@ -51,13 +51,13 @@ this crate.
 ## The seam was already there
 
 `xpui` reaches a backend through
-[five traits](../../../xpui/docs/host.md), and one of them — `Chrome` — says
+[five traits](https://github.com/XPUI-Framework/xpui-framework/blob/main/crates/xpui/docs/host.md), and one of them — `Chrome` — says
 outright that the host draws this part. Eight calls: a list, a dialog, a slider,
 a progress bar, a header, a sub-header, a hint bar, a scroll indicator
-([`host/chrome.rs`](../../../xpui/src/host/chrome.rs)).
+([`host/chrome.rs`](https://github.com/XPUI-Framework/xpui-framework/blob/main/crates/xpui/src/host/chrome.rs)).
 
 On a drawing library those eight have to be *written*, which is what
-[`xpui-chrome`](../../chrome/README.md) exists for. On a component library they
+[`xpui-chrome`](https://github.com/XPUI-Framework/xpui-chrome/blob/main/README.md) exists for. On a component library they
 are calls into something that already exists. So adopting FreeInkUI is a change
 to one backend and to nothing else — not to the framework, not to a single
 screen. That is the dependency inversion paying for itself; it was built for

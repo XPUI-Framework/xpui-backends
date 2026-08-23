@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+# Formats this repository's C++ in place.
+#
+# The C++ in this organisation is a backend's shim and the hosts that link it,
+# and it is the half a firmware author reads to understand the boundary — so it
+# is held to the same standard as the Rust, and to the same standard as the
+# firmware it plugs into. `.clang-format` is taken unchanged from that
+# firmware, so a file moving between the two does not reformat on arrival.
+#
+# Carried by every repository that holds C++, alongside `bin/gate-common.sh`.
+#
+#   ./bin/clang-format-fix        format every C++ file
+#   ./bin/clang-format-fix -g     only the ones git reports as changed
+#   ./bin/clang-format-fix -c     check only, change nothing (what CI runs)
+#
+# Written for bash 3.2, which is what macOS ships: no `mapfile`, no `readarray`.
+
+if command -v clang-format-21 >/dev/null 2>&1; then
+  CLANG_FORMAT_BIN="clang-format-21"
+elif command -v clang-format >/dev/null 2>&1; then
+  CLANG_FORMAT_BIN="clang-format"
+else
+  printf "'clang-format' not found in current environment\n"
+  printf "Install clang-format-21 (recommended), clang, or clang-tools for your OS\n"
+  exit 1
+fi
+
+set -euo pipefail
+
+CLANG_FORMAT_VERSION_RAW="$(${CLANG_FORMAT_BIN} --version)"
+CLANG_FORMAT_MAJOR="$(printf '%s\n' "${CLANG_FORMAT_VERSION_RAW}" | grep -oE '[0-9]+' | head -n1)"
+
+# Guard against a binary older than the config. An old clang-format does not
+# reject options it does not know — it ignores them — so the file comes back
+# formatted differently from what CI expects, with no warning.
+if [[ -z "${CLANG_FORMAT_MAJOR}" || "${CLANG_FORMAT_MAJOR}" -lt 21 ]]; then
+  echo "Error: ${CLANG_FORMAT_BIN} is too old: ${CLANG_FORMAT_VERSION_RAW}"
+  echo "This repository's .clang-format requires clang-format 21 or newer."
+  exit 1
+fi
+
+MODE="${1:-}"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "${PROJECT_DIR}"
+
+# `find` from the repository root, not `git ls-files`: the C++ ships inside a
+# crate directory and has to be formattable before it has ever been committed.
+#
+# The root, and not a list of directories: this script is carried by every
+# repository in the organisation, and a hardcoded `crates examples` walked
+# nothing at all in the two that hold C++ under other names. A directory this
+# script does not walk is a directory where nothing is ever formatted or
+# checked, and `find` on a missing one exits non-zero into `set -e` — which is
+# at least loud. Walking nowhere quietly is what this avoids.
+#
+# Build directories are pruned, not filtered: PlatformIO writes CMake's own
+# compiler-probe sources under `.pio/`, cargo writes generated C++ under
+# `target/`, and a fetched SDK is somebody else's code. None of it is ours to
+# format, and checking it fails the gate on code nobody here wrote.
+FILES="$(find . \
+  \( -name .pio -o -name target -o -name .git -o -name 'freeink-sdk' \) -prune -o \
+  -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) -print \
+  | sed 's|^\./||' | sort)"
+
+if [[ "${MODE}" == "-g" ]]; then
+  CHANGED="$(git ls-files --modified --others --exclude-standard 2>/dev/null || true)"
+  FILES="$(printf '%s\n' "${FILES}" | grep -Fx -f <(printf '%s\n' "${CHANGED}") || true)"
+fi
+
+if [[ -z "${FILES}" ]]; then
+  echo "No C++ files to format."
+  exit 0
+fi
+
+COUNT="$(printf '%s\n' "${FILES}" | wc -l | tr -d ' ')"
+
+if [[ "${MODE}" == "-c" ]]; then
+  printf '%s\n' "${FILES}" | xargs "${CLANG_FORMAT_BIN}" -style=file --dry-run --Werror
+  echo "C++ formatting: ${COUNT} file(s) clean"
+else
+  printf '%s\n' "${FILES}" | xargs "${CLANG_FORMAT_BIN}" -style=file -i
+  echo "Formatted ${COUNT} C++ file(s)."
+fi
