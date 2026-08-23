@@ -95,12 +95,15 @@ pub type Context = *mut c_void;
 /// A README that does not build is worse than none: this crate's only usage
 /// example passed the wrong form to its own macro for as long as nothing
 /// tried it.
+///
+/// The tutorial that used to live here is in `xpui-cpp` now. Its C++ blocks
+/// include `xpui_host.h`, which is the *application's* header and lives with
+/// the host that defines it — so half of it could not be compiled from this
+/// repository, and half of it was.
 #[cfg(doctest)]
 mod guides {
     #[doc = include_str!("../README.md")]
     pub mod readme {}
-    #[doc = include_str!("../docs/tutorial.md")]
-    pub mod tutorial {}
 }
 
 /// The source of [`register_screen!`], for an ABI checker to parse.
