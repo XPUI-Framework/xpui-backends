@@ -102,3 +102,17 @@ mod guides {
     #[doc = include_str!("../docs/tutorial.md")]
     pub mod tutorial {}
 }
+
+/// The source of [`register_screen!`], for an ABI checker to parse.
+///
+/// The macro generates the factory functions a C++ application exports, so no
+/// Rust file spells their signatures out — the only place they exist is the
+/// macro's own body. `xpui-cpp` checks its `xpui_app.h` against them, and
+/// after the split it cannot reach this file by path: a git dependency lands
+/// in a cargo checkout directory, not beside the crate that reads it.
+///
+/// So the crate that owns the macro hands out its text rather than a sibling
+/// guessing at a path. Behind `testing` because a `&'static str` of a source
+/// file is bytes a firmware has no use for.
+#[cfg(any(test, feature = "testing"))]
+pub const LIFECYCLE_SOURCE: &str = include_str!("lifecycle.rs");
