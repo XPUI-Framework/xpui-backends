@@ -1149,6 +1149,96 @@ commands_resolve() {
     "${not_ours}" "${elsewhere_lines}" "${elsewhere_blocks}"
 }
 
+# Every crate is tested, or says in writing why it is not.
+#
+# A gap is fine when it is chosen. What is not fine is a gap nobody knows
+# about, which is what this repository had until somebody counted.
+#
+# So a crate with neither a `tests/` directory nor a `#[cfg(test)]` module is a
+# failure **unless it is named below with a reason**. The list is short on
+# purpose: a long one is how a limit becomes decoration.
+#
+# `UNTESTED_CRATES` holds `path:reason` pairs, and the reason is printed, so
+# the exemption is read every time somebody runs the gate rather than buried in
+# a manifest.
+[ -n "${UNTESTED_CRATES+x}" ] || UNTESTED_CRATES=()
+
+crates_are_tested() {
+  say "Every crate is tested, or says why not"
+
+  local manifest dir problems=0 exempt reason tested used=""
+  while IFS= read -r manifest; do
+    grep -q '^\[package\]' "${manifest}" || continue
+    dir="$(dirname "${manifest}")"
+
+    tested=""
+    # A `tests/` holding only an empty file is not a tested crate. `-s` is the
+    # difference between "there is a file" and "there is something in it".
+    if [ -d "${dir}/tests" ]; then
+      for candidate in "${dir}"/tests/*.rs; do
+        [ -s "${candidate}" ] && tested="yes"
+      done
+    fi
+    # `#[cfg(test)]` on a line that is not a comment, because `grep` does not
+    # know Rust and a crate should not pass on a sentence about testing.
+    if [ -z "${tested}" ] \
+      && grep -rs '#\[cfg(test)\]' "${dir}/src" | grep -qv '^[^:]*: *//'; then
+      tested="yes"
+    fi
+
+    if [ -n "${tested}" ]; then
+      # A crate that has grown tests but is still on the list: the exemption is
+      # dead, and a dead exemption is how a short list becomes a long one.
+      for entry in "${UNTESTED_CRATES[@]+"${UNTESTED_CRATES[@]}"}"; do
+        [ -n "${entry}" ] || continue
+        if [ "${entry%%:*}" = "${dir#./}" ]; then
+          # Named, so the dangling-entry sweep below does not report it twice.
+          used="${used} ${entry%%:*}"
+          printf '  %s is exempt and has tests. Remove it from UNTESTED_CRATES.\n' \
+            "${dir#./}" >&2
+          problems=$((problems + 1))
+        fi
+      done
+      continue
+    fi
+
+    exempt=""
+    for entry in "${UNTESTED_CRATES[@]+"${UNTESTED_CRATES[@]}"}"; do
+      [ -n "${entry}" ] || continue
+      if [ "${entry%%:*}" = "${dir#./}" ]; then
+        exempt="yes"
+        used="${used} ${entry%%:*}"
+        reason="${entry#*:}"
+        printf '    %-24s %s\n' "${dir#./}" "${reason}"
+      fi
+    done
+    [ -n "${exempt}" ] && continue
+
+    printf '  %s has no tests/ and no #[cfg(test)], and is not exempt\n' "${dir#./}" >&2
+    problems=$((problems + 1))
+  done < <(git ls-files '*Cargo.toml' | grep -v '^target/')
+
+  # An entry naming a crate that is not here at all — a path that moved, or a
+  # repository that was split out from under it.
+  for entry in "${UNTESTED_CRATES[@]+"${UNTESTED_CRATES[@]}"}"; do
+    [ -n "${entry}" ] || continue
+    case " ${used} " in
+      *" ${entry%%:*} "*) ;;
+      *)
+        printf '  UNTESTED_CRATES names %s, which is not a crate here.\n' "${entry%%:*}" >&2
+        problems=$((problems + 1))
+        ;;
+    esac
+  done
+
+  if [ "${problems}" -gt 0 ]; then
+    echo "ERROR: ${problems} crate(s) above are untested and unexplained. Add a" >&2
+    echo "       test, or add the crate to UNTESTED_CRATES with the reason —" >&2
+    echo "       a gap that was chosen is not the same as one nobody saw." >&2
+    return 1
+  fi
+}
+
 # Every check this repository defines is one this repository runs.
 #
 # It replaces `ownership_is_complete`, which asked *which repository* a check

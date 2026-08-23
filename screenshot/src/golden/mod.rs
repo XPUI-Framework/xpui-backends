@@ -50,8 +50,10 @@ const DIR: &str = "tests/screenshots";
 
 /// Asserts that `frame` matches the golden committed as `tests/screenshots/<name>.png`.
 ///
-/// Writes the golden instead when `UPDATE_SNAPSHOTS` is set, and always writes
-/// it when it does not exist yet — a new test should not need two runs.
+/// Writes the golden instead when `UPDATE_SNAPSHOTS` is set, and writes it when
+/// it does not exist yet — **and then fails anyway**, so nobody commits a
+/// picture they have never looked at. A new test does need two runs, and that
+/// is the point of it.
 ///
 /// On a mismatch it prints an ASCII view of what changed and writes a
 /// side-by-side image to `target/diff/<name>.png`.
