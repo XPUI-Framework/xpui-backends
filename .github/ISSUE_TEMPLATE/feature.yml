@@ -1,0 +1,31 @@
+name: Feature request
+description: Something the framework, a backend or a board should do and does not.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What
+      description: The behaviour you want, as a user of the crate would see it.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: The screen or the device that needs it. A feature with no screen behind it is hard to judge.
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where it belongs
+      description: The framework may not name a product, a device or a backend. Anything that does belongs in a backend or a board crate.
+      options:
+        - The framework (`xpui`)
+        - A backend
+        - A board crate
+        - The simulator or the gallery
+        - Not sure
+    validations:
+      required: true

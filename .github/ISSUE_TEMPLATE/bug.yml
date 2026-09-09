@@ -1,0 +1,78 @@
+name: Bug report
+description: Something does not do what the documentation says it does.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing, run `./build-and-test.sh` on `main`. If it is red, that is the bug — paste the failing stage below.
+  - type: dropdown
+    id: repository
+    attributes:
+      label: Repository
+      description: Which of the ten this is about. If it is another one, file it there.
+      options:
+        - xpui-framework (the crate `xpui`)
+        - xpui-chrome
+        - xpui-boards
+        - xpui-backends
+        - xpui-simulator
+        - xpui-gallery
+        - xpui-rp2040
+        - xpui-esp32
+        - xpui-cpp
+        - xpui-dev
+    validations:
+      required: true
+  - type: dropdown
+    id: board
+    attributes:
+      label: Board
+      options:
+        - Not board-specific
+        - Xteink X3
+        - Xteink X4
+        - Xteink X4 Pro
+        - Seeed Sticky
+        - Pimoroni Badger 2040
+        - Pimoroni Tufty 2040
+        - Pimoroni Inky Frame
+        - The simulator
+    validations:
+      required: true
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend
+      options:
+        - Not backend-specific
+        - embedded-graphics
+        - FreeInkUI, over the C ABI
+        - The simulator
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: "`git rev-parse --short HEAD` in the repository the bug is in."
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: gate
+    attributes:
+      label: Gate output
+      description: "`./build-and-test.sh`, from the first failing stage down. Leave it empty if the gate is green."
+      render: text
