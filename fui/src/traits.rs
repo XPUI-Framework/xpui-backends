@@ -22,6 +22,7 @@ impl<P: Platform> TextMetrics for Backend<P> {
             return 0;
         }
         let text = as_c(text);
+        // Safety: `text` is NUL-terminated and outlives the call.
         unsafe { raw::xpui_fui_text_width(font.0, text.as_ptr().cast(), style as u8) }
     }
 

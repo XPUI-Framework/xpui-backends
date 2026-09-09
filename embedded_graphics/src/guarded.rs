@@ -1,42 +1,17 @@
 //! The one place this backend's shared state is reached through.
 //!
-//! `xpui::host::Host` requires `Sync`, and it requires it for a real reason:
-//! `crates/xpui/src/screen/mod.rs` documents that `loop_` and `render` may run
-//! on different tasks. This backend's state sits behind interior mutability,
-//! which is not `Sync` on its own — so something has to make the claim.
+//! `xpui::host::Host` requires `Sync`: `loop_` and `render` may run on
+//! different tasks. This state sits behind interior mutability, so something
+//! has to make the claim, and the `critical-section` feature chooses how: on,
+//! this is a `critical_section::Mutex<RefCell<T>>` and `Backend` is `Sync` by
+//! the compiler; off, a bare `RefCell<T>` and `Sync` only by an `unsafe impl`
+//! that is unsound off one thread. A single-threaded loop does not want
+//! interrupts masked on every text measurement, which is why it is a choice.
 //!
-//! Two ways to make it, chosen by the `critical-section` feature:
-//!
-//! | feature | what this is | what `Backend` is |
-//! |---|---|---|
-//! | on | `critical_section::Mutex<RefCell<T>>` | `Sync` **by the compiler**, with no `unsafe impl` anywhere |
-//! | off | a bare `RefCell<T>` | `Sync` only by an `unsafe impl` that is **unsound off one thread** |
-//!
-//! That is the whole of the difference, and it is why the feature exists
-//! rather than the guard being unconditional: a desktop simulator and a
-//! bare-metal loop that ticks and paints in one place are single-threaded, and
-//! neither wants interrupts masked on every text measurement.
-//!
-//! One seam rather than two spellings at twenty-odd call sites, because a
-//! guard that is only remembered at some of them guards nothing. The inner
-//! field is private to this module, so that is enforceable rather than
-//! aspirational: there is no way to reach the state except through here.
-//!
-//! # How long the guard is held
-//!
-//! **For a whole draw call, not for a memory write.** That matters on device,
-//! and "briefly" would be the wrong word: `Canvas::clear` on a display that
-//! writes straight through to the panel — the Tufty's parallel bus, say — puts
-//! the entire transfer inside the critical section, with interrupts masked for
-//! all of it. `draw_text` rasterises glyphs in there too, and a full-screen
-//! `scrim` walks every pixel.
-//!
-//! On a display that owns a RAM framebuffer, like the Badger's, the same calls
-//! are memory writes and much shorter — but still whole calls.
-//!
-//! That granularity is the price of a seam this simple. Narrowing it means
-//! taking the display out rather than borrowing it, which is what
-//! spec 08 — *an asynchronous present* — is about.
+//! **The guard is held for a whole draw call**, not a memory write: on a
+//! display that writes straight through to the panel, `Canvas::clear` puts
+//! the entire transfer inside the critical section. Narrowing it means
+//! taking the display out rather than borrowing it — `Backend::loan_display`.
 
 use core::cell::RefCell;
 
@@ -79,13 +54,9 @@ impl<T> Guarded<T> {
         body(&mut self.0.borrow_mut())
     }
 
-    /// Runs `body` with the state borrowed *shared*.
-    ///
-    /// The read-only paths — every `InputSource` query, and `screen_size` —
-    /// took a shared borrow before this seam existed, and they keep one. Not
-    /// a micro-optimisation: `with` would make two overlapping reads panic
-    /// where they have always been legal, which is a narrower contract than
-    /// ten public trait methods had.
+    /// Runs `body` with the state borrowed *shared*: the read-only paths —
+    /// every `InputSource` query, and `screen_size` — may overlap without a
+    /// panic.
     #[cfg(feature = "critical-section")]
     pub(crate) fn with_ref<R>(&self, body: impl FnOnce(&T) -> R) -> R {
         critical_section::with(|cs| body(&self.0.borrow_ref(cs)))

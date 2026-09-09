@@ -1,10 +1,9 @@
 # Whether a C header and the Rust beside it agree about types.
 #
 # Its own crate rather than a test module, because more than one boundary
-# needs it: the FreeInkUI backend owns three pairs and the C++ host example
-# owns two, and after those become separate repositories each has to check
-# what it can see. A copy in each would be a checker that could not see its
-# own drift.
+# needs it: the FreeInkUI backend owns its pair and the C++ host owns two, in
+# a repository of its own. A copy in each would be a checker that could not
+# see its own drift.
 [package]
 name = "xpui-abi-check"
 description = "Compares a C header against the Rust that declares or defines it, on types"
@@ -16,6 +15,9 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 readme = "README.md"
+
+[lints]
+workspace = true
 
 [lib]
 name = "xpui_abi_check"

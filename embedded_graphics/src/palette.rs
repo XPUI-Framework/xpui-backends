@@ -2,7 +2,8 @@
 
 use embedded_graphics::pixelcolor::BinaryColor;
 
-/// The two colours ink and background map onto.
+/// The two colours ink and background map onto. The wrong pair inverts a
+/// panel silently; the crate root says which is which.
 #[derive(Copy, Clone, Debug)]
 pub struct Palette<C> {
     pub ink: C,

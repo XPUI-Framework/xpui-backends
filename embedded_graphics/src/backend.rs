@@ -40,7 +40,7 @@ pub struct Backend<D: DrawTarget> {
     fonts: Guarded<Fonts>,
     /// The chrome this backend paints with.
     ///
-    /// Per backend rather than a global, because the whole point of a device
+    /// Per backend rather than a global, because the whole point of device
     /// presets is that a 296x128 panel and a 480x800 one need different
     /// numbers — and a process can drive both, as the screenshot tests do.
     pub(crate) metrics: Metrics,
@@ -64,50 +64,24 @@ pub struct Backend<D: DrawTarget> {
     pub(crate) left_right_keys: bool,
 }
 
-// With the `critical-section` feature there is **no `unsafe impl` here at
-// all**: `Guarded` is a `critical_section::Mutex`, the two counters are
-// atomics, and the compiler works `Sync` out for itself. Nothing is claimed,
-// so nothing can be claimed wrongly.
-//
-// Safety: without that feature, **this backend must be driven from one
-// thread.** Not a style note — the consequence of breaking it is undefined
-// behaviour, not a clean error.
-//
-// `xpui` requires `Host: Sync` because a firmware may paint on a second task
-// (see `xpui::screen::Screen::body`), and this claim is what satisfies that
-// bound. But `Guarded` is then a bare `RefCell`, whose borrow flag is a
-// non-atomic counter: two threads can both take `borrow_mut` and end up with
-// aliasing `&mut D`. The friendlier outcome is an "already borrowed" panic,
-// which under this workspace's `panic = "abort"` takes the firmware down.
-//
-// So: a desktop simulator, or a bare-metal loop that ticks and paints in one
-// place, is fine — that is every consumer of the default. A host that renders
-// on its own task must turn the feature on. `examples/rp2040` turns it on
-// without being one: it is a single executor task, and the reason there is
-// that an interrupt handler could plausibly reach the backend.
-//
-// `D: Send` because sharing a `&Backend<D>` is only meaningful if `D` itself
-// could have moved between threads; without it a `D` holding an `Rc` would be
-// smuggled across one.
+// Safety: without `critical-section`, `Guarded` is a bare `RefCell`, so this
+// backend must be driven from one thread — two threads in `borrow_mut` alias
+// `&mut D`, which is undefined behaviour, not a clean error. A desktop
+// simulator or a bare-metal loop that ticks and paints in one place is fine;
+// a host that renders on its own task turns the feature on, and the compiler
+// then works `Sync` out for itself. `D: Send` because sharing a `&Backend<D>`
+// is only meaningful if `D` could have moved between threads.
 #[cfg(not(feature = "critical-section"))]
 unsafe impl<D: DrawTarget + Send> Sync for Backend<D> {}
 
-// And with the feature on, that the compiler agrees — here, rather than two
-// crates away at a use site.
-//
-// Without this, adding an unguarded `Cell` to `Backend` still compiles: the
-// library never names `Sync` itself, so the error surfaces only where a
-// backend is installed or shared. That is exactly how the bug this feature
-// fixes arose — three `Cell`s crept in under one `unsafe impl` and nothing
-// local objected.
+// With the feature on, the compiler's verdict — here, rather than two crates
+// away at a use site: the library never names `Sync` itself, so without this
+// an unguarded `Cell` added to `Backend` would surface only where a backend
+// is installed.
 #[cfg(feature = "critical-section")]
 const _: () = {
-    // The supertrait is the assertion: an `impl` of it is only accepted if
-    // `Backend<D>` really is `Sync`, and that is checked here rather than at
-    // a call, so nothing has to be invoked for it to bite.
-    //
-    // Never used, and that is the point — it exists to be compiled, not
-    // called.
+    // The supertrait is the assertion: the `impl` is accepted only if
+    // `Backend<D>` really is `Sync`, checked here rather than at a call.
     #[expect(dead_code, reason = "a compile-time assertion has no callers")]
     trait IsSync: Sync {}
     impl<D: DrawTarget + Send> IsSync for Backend<D> where D::Color: Sync {}
@@ -144,7 +118,10 @@ impl<D: DrawTarget> Backend<D> {
         &self.keys
     }
 
-    /// Says the device has a Left/Right pair. See [`Backend::left_right_keys`].
+    /// Says the device has a Left/Right pair.
+    ///
+    /// `false` until called, the safe direction: a control told the pair
+    /// exists when it does not cannot be changed by any key.
     pub fn with_left_right_keys(mut self, present: bool) -> Self {
         self.left_right_keys = present;
         self
@@ -173,50 +150,39 @@ impl<D: DrawTarget> Backend<D> {
         self
     }
 
+    /// Sets the family the framework's roles resolve through.
     pub fn with_fonts(self, fonts: Fonts) -> Self {
         self.fonts.with(|current| *current = fonts);
         self
     }
 
-    /// The type this backend is currently set in.
+    /// The family in use, as [`with_fonts`](Backend::with_fonts) or a switch
+    /// left it.
     pub fn fonts(&self) -> Fonts {
         self.fonts.with(|fonts| *fonts)
     }
 
-    /// The chrome this backend paints with.
+    /// The measurements every chrome painter lays out against.
     pub fn metrics(&self) -> &Metrics {
         &self.metrics
     }
 
     /// Sets the type in another family, and asks for a repaint.
     ///
-    /// **The sizes are re-derived from the chrome, not carried over.** Each
-    /// role keeps the line height these metrics called for and the new
-    /// family answers with the tier it was cut in — so a family with a coarser
-    /// ladder still lands inside the rows that were laid out, rather than
-    /// inheriting the previous family's heights and overflowing them.
-    ///
-    /// **This replaces a [`Fonts`] given to [`with_fonts`](Backend::with_fonts).**
-    /// The sizes come from the metrics, so a caller that hand-picked its own
-    /// gets the chrome's back. That is the point — a swap must not carry sizes
-    /// into a family that was never measured for them — but it means
-    /// `with_fonts` is for a backend nothing will re-set.
-    ///
-    /// Every id every role reports changes with it, because an id is a hash of
-    /// the bytes behind it. Anything keyed on one — a cached page layout, a
-    /// measured column — is invalidated by that alone, with nobody having to
-    /// remember to say so.
+    /// The sizes are re-derived from the chrome, not carried over: each role
+    /// keeps the line height these metrics called for and the new family
+    /// answers with the tier it was cut in, so a coarser ladder still lands
+    /// inside the rows laid out. That replaces a [`Fonts`] given to
+    /// [`with_fonts`](Backend::with_fonts), which is for a backend nothing
+    /// will re-set. Every id every role reports changes with it — an id is a
+    /// hash of the bytes — so anything keyed on one is invalidated unasked.
     pub fn set_family(&self, family: &'static Family) {
         let next = Fonts::for_metrics(&self.metrics).with_family(family);
         self.fonts.with(|fonts| *fonts = next);
-        // Both flags, because they answer to different readers. `dirty` is for
-        // a caller driving its own loop; `request_update` is what `App`
-        // consults, and setting only the first leaves a panel painted in the
-        // face that has just been replaced — on e-ink, until something else
-        // happens to change.
-        // Set before `request_update`, which reaches this same backend
-        // through the installed host — and does so without a guard held,
-        // because `dirty` is an atomic rather than guarded state.
+        // Both flags: `dirty` is for a caller driving its own loop,
+        // `request_update` is what `App` consults. `dirty` first, because
+        // `request_update` reaches this same backend through the installed
+        // host — without a guard held, since `dirty` is an atomic.
         self.dirty.store(true, Ordering::Relaxed);
         xpui::host::request_update();
     }

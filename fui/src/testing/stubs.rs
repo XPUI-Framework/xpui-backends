@@ -35,14 +35,17 @@ unsafe fn pull(
     (0..rows.max(0))
         .map(|index| {
             (0..fields)
+                // Safety: `cell` answers with null or a string `ctx` keeps
+                // alive for the call.
                 .map(|field| unsafe { borrow(cell(ctx, index, field)) })
                 .collect()
         })
         .collect()
 }
 
-/// The panel the doubles claim to be. A portrait e-reader.
+/// The width of the panel the doubles claim to be: a portrait e-reader.
 pub const WIDTH: i32 = 480;
+/// Its height.
 pub const HEIGHT: i32 = 800;
 
 /// Metrics the doubles answer with, indexed by `ThemeMetric`'s own tag values.
@@ -97,6 +100,8 @@ extern "C" fn xpui_fui_draw_text(x: i32, y: i32, text: *const u8, font_id: i32, 
     record(Call::Text {
         x,
         y,
+        // Safety: the shim's contract — each pointer is null or a
+        // NUL-terminated string alive for this call.
         text: unsafe { borrow(text) }.unwrap_or_default(),
         font: font_id,
         style,
@@ -163,6 +168,8 @@ extern "C" fn xpui_fui_font(role: u8) -> i32 {
 
 #[unsafe(no_mangle)]
 extern "C" fn xpui_fui_text_width(_font_id: i32, text: *const u8, _style: u8) -> i32 {
+    // Safety: the shim's contract — each pointer is null or a NUL-terminated
+    // string alive for this call.
     unsafe { borrow(text) }.map_or(0, |text| text.chars().count() as i32 * 8)
 }
 
@@ -179,7 +186,10 @@ extern "C" fn xpui_fui_metric(metric: u8) -> i32 {
 #[unsafe(no_mangle)]
 extern "C" fn xpui_fui_draw_header(title: *const u8, subtitle: *const u8) {
     record(Call::Header {
+        // Safety: the shim's contract — each pointer is null or a
+        // NUL-terminated string alive for this call.
         title: unsafe { borrow(title) },
+        // Safety: as above.
         subtitle: unsafe { borrow(subtitle) },
     });
 }
@@ -194,7 +204,10 @@ extern "C" fn xpui_fui_draw_sub_header(
     right: *const u8,
 ) {
     record(Call::SubHeader {
+        // Safety: the shim's contract — each pointer is null or a
+        // NUL-terminated string alive for this call.
         label: unsafe { borrow(label) }.unwrap_or_default(),
+        // Safety: as above.
         right: unsafe { borrow(right) },
     });
 }
@@ -211,9 +224,14 @@ extern "C" fn xpui_fui_draw_button_hints(
     _next_word: i32,
 ) {
     record(Call::Hints([
+        // Safety: the shim's contract — each pointer is null or a
+        // NUL-terminated string alive for this call.
         unsafe { borrow(back) },
+        // Safety: as above.
         unsafe { borrow(confirm) },
+        // Safety: as above.
         unsafe { borrow(previous) },
+        // Safety: as above.
         unsafe { borrow(next) },
     ]));
 }
@@ -271,6 +289,7 @@ extern "C" fn xpui_fui_draw_list(
     cell: CellFn,
     ctx: *mut core::ffi::c_void,
 ) {
+    // Safety: the pair the shim was handed, valid for this call.
     let pulled = unsafe { pull(cell, ctx, rows, 3) };
     record(Call::List {
         rows: rows.max(0) as usize,
@@ -290,8 +309,11 @@ extern "C" fn xpui_fui_draw_option_popup(
     cell: CellFn,
     ctx: *mut core::ffi::c_void,
 ) {
+    // Safety: the pair the shim was handed, valid for this call.
     let pulled = unsafe { pull(cell, ctx, count, 1) };
     record(Call::Popup {
+        // Safety: the shim's contract — each pointer is null or a
+        // NUL-terminated string alive for this call.
         title: unsafe { borrow(title) }.unwrap_or_default(),
         selected,
         options: pulled.into_iter().map(|row| row[0].clone()).collect(),

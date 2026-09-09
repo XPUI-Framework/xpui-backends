@@ -1,28 +1,16 @@
 //! A typeface, in the sizes it was packaged in.
 //!
-//! A bitmap family has the sizes it has. Nothing is scaled at run time, so
-//! "18pt" is not a request — it is one of a handful of tiers the foundry cut,
-//! and asking for a height between two of them gets the nearer one.
+//! A bitmap family has the sizes it has: nothing is scaled at run time, so
+//! "18pt" is one of a handful of tiers the foundry cut, and asking for a
+//! height between two of them gets the nearer one.
 //!
-//! # What a font id is here
-//!
-//! **The id is a hash of the bytes.** Not a slot number, not an index into
-//! whatever happens to be registered: two builds that ship the same face agree
-//! on its id, and a face swapped for different bytes gets a different one.
-//!
-//! That matters because an id is what a consumer keys a cache on. The firmware
-//! this framework was written beside writes the id into every cached page
-//! layout and compares it on load, so a re-uploaded font fails the comparison
-//! and the layout is rebuilt — without anybody having to remember to send a
-//! notification. Hand out a stable id and mutate what sits behind it and that
-//! mechanism silently stops working.
-//!
-//! [`font_tier!`] hashes the regular and the bold, which is every style it
-//! builds. A tier assembled by hand with an italic should hash that too — the
-//! id has to move with anything that changes the pixels. What the id does
-//! *not* cover is the family that reached the tier, because a tier does not
-//! know: [`Fonts::id`](super::Fonts::id) folds the family's name in, so the
-//! same tier reached through two families is two ids.
+//! **The id is a hash of the bytes**, not a slot number: two builds that ship
+//! the same face agree on its id, and a face swapped for different bytes gets
+//! a different one. A consumer keys a cache on it, so a stable id over
+//! changed bytes serves the old face with nothing to notice. [`font_tier!`]
+//! hashes the regular and the bold; a tier assembled by hand with an italic
+//! hashes that too. [`Fonts::id`](super::Fonts::id) folds the family's name
+//! in, so the same tier reached through two families is two ids.
 
 use u8g2_fonts::{FontRenderer, fonts as u8g2};
 use xpui::host::{FontId, FontStyle};
@@ -117,11 +105,6 @@ impl Family {
     /// family cut at 28 and 39 wants the 28, and one asking for 38 wants the
     /// 39. Ties go to the smaller — the one that certainly fits the row that
     /// asked — which falls out of `<` and the ascending order.
-    ///
-    /// This is what makes a family swap safe. The *chrome* names the height it
-    /// has room for and the family answers with what it was cut in, so a
-    /// second family with coarser tiers still lands inside the rows the board
-    /// laid out, rather than carrying the first family's sizes across.
     pub fn tier_for(&'static self, line_height: i32) -> &'static Tier {
         let mut best = &self.tiers[0];
         for tier in self.tiers {
@@ -139,14 +122,11 @@ fn distance(a: i32, b: i32) -> i32 {
 
 // -- Helvetica -------------------------------------------------------------
 //
-// The family this backend ships, in the sizes u8g2 packages it in. Every face
-// is a `_tf` variant — u8g2's full 8-bit set — so accented Latin renders as
-// itself rather than as a replacement glyph.
-//
-// **These faces are not this repository's to license.** `u8g2-fonts` is MIT
-// and Apache-2.0; the bitmaps it carries are their foundries' — this set
-// descends from the X11 bitmap distribution, under Adobe's and Digital's
-// notices. Anything shipping this backend ships those too:
+// The family this backend ships, in the sizes u8g2 packages it in; every
+// face is a `_tf` variant, u8g2's full 8-bit set, so accented Latin renders
+// as itself. **These faces are not this repository's to license**: the
+// bitmaps descend from the X11 distribution under Adobe's and Digital's
+// notices, and anything shipping this backend ships those too —
 // <https://github.com/olikraus/u8g2/blob/master/LICENSE>.
 
 /// One tier of a family cut in a regular and a bold and nothing else.

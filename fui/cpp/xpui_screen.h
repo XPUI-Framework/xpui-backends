@@ -1,30 +1,15 @@
 // The lifecycle a host drives a Rust screen through.
 //
-// The other half of the boundary. `xpui_fui.h` is what Rust calls to draw;
-// this is what the host calls to run a screen at all — and the direction is
-// reversed, so these are DEFINED IN RUST, in `src/lifecycle.rs`, and this
-// header is only the declaration. There is no `.cpp` beside it to compile.
+// The other half of the boundary: `xpui_fui.h` is what Rust calls to draw;
+// these are what the host calls to run a screen, and they are DEFINED IN
+// RUST, in `src/lifecycle.rs` — this header is only the declaration.
 //
-// A screen is an opaque handle. It comes from a factory the application
-// exports (see the `register_screen!` macro) and is passed back to every call
-// below until `xpui_screen_destroy` frees it. Nothing on this side may look
-// inside it, and a handle used after destroy is a use-after-free rather than a
-// null-pointer crash — every function here tolerates NULL and nothing else.
-//
-// Ordering, as a host must call them:
-//
-//   handle = create();          the application's factory
-//   xpui_screen_on_enter(handle);
-//   repeat {
-//     xpui_screen_loop(handle);     input, once per frame
-//     xpui_screen_render(handle);   paint, only when a frame is wanted
-//   }
-//   xpui_screen_on_exit(handle);
-//   xpui_screen_destroy(handle);
-//
-// `loop` before `render` matters: a screen asks for its repaint from inside
-// `loop`, through `xpui_fui_request_update`, so a host that renders first
-// paints the frame before the one it was asked for.
+// A screen is an opaque handle from a factory the application exports (see
+// `register_screen!`), passed back to every call until `xpui_screen_destroy`
+// frees it. Every function tolerates NULL and nothing else; a handle used
+// after destroy is a use-after-free. Call on_enter once, then loop and
+// render per frame — `loop` before `render`, because a screen asks for its
+// repaint from inside `loop` — then on_exit, then destroy.
 
 #pragma once
 

@@ -1,34 +1,18 @@
-// The xpui side of FreeInkUI.
+// The xpui side of FreeInkUI: every symbol in xpui_fui.h, drawn through
+// freeink::ui::DisplayTarget — a raw 1-bit framebuffer, the SDK's bundled
+// font and its own components. Nothing here names a product.
 //
-// Every symbol in xpui_fui.h, drawn through freeink::ui::DisplayTarget: a raw
-// 1-bit framebuffer, the SDK's bundled Noto Sans bitmap font, and the SDK's own
-// components. Nothing here names a product, so any firmware that can hand over
-// a framebuffer can host xpui.
+// Three conventions are decided once, here. Ink: a SET bit is WHITE, as
+// xpui_fui_attach and DisplayTarget both have it, so nothing inverts on the
+// way through; xpui_fui_draw_image's bitmaps have BIT 0 = INK, which is
+// FreeInkUI's Mask1, so the sampler folds the polarity in. Coordinates: xpui
+// draws in logical coordinates and the buffer is already in that frame, so
+// logical -> panel is the identity; a firmware that rotates its panel does so
+// on the way to the glass. Font ids: 0 must mean "no such font", and 0 is
+// also FONT_SLOT_SMALL, so ids are FUI slot + 1, decoded through slotFor().
 //
-// Three conventions are decided once, here, because they are what the file is
-// for:
-//
-//  * Ink. A SET bit is WHITE — xpui_fui_attach's contract, and FreeInkDisplay's
-//    own. DisplayTarget already works that way, so ink is Color::Black,
-//    background is Color::White, and nothing inverts on the way through. The
-//    exception is xpui_fui_draw_image, whose bitmaps have BIT 0 = INK: that is
-//    precisely FreeInkUI's BitmapFormat::Mask1, so such a bitmap goes in as
-//    Mask1 and forEachBitmapPixel folds the polarity in — no copy, no flip.
-//
-//  * Coordinates. xpui draws in logical coordinates and the buffer it hands
-//    over is already in that frame ((width + 7) / 8 bytes per row), so the
-//    DisplayTarget is built in its native orientation and logical -> panel is
-//    the identity. A firmware that rotates its panel rotates it on the way to
-//    the glass, not here.
-//
-//  * Font ids. xpui_fui_font must be able to say "this build ships no such
-//    font" by returning 0, but 0 is also FreeInkUI's FONT_SLOT_SMALL. So the
-//    ids this file hands out are FUI slot + 1, and 0 stays reserved for "none".
-//    Every entry point that takes a font id decodes it through slotFor().
-//
-// The shim is stateless apart from the framebuffer and the clip: each call
-// builds its own DisplayTarget, Frame and props and retains nothing. It is not
-// reentrant — one framebuffer, one clip, one scratch row array.
+// Global state: the framebuffer, the clip, a cached theme, the list-item
+// scratch array and the present hook. Not reentrant.
 
 #include "xpui_fui.h"
 
@@ -93,16 +77,14 @@ const fui::ThemeTokens& theme() {
 
 // -- the clip ----------------------------------------------------------------
 //
-// FreeInkUI has no clipping, so the clip is enforced by the framebuffer VIEW
-// rather than by intercepting draw calls. The windowed DisplayTarget starts at
-// the clip's first row and its logical frame ends at the clip's last row and
-// right edge, so DisplayTarget::plot's own bounds check drops everything above,
-// below and to the right — glyph pixels included, exactly, for free.
-//
-// The left edge is the one that cannot be said that way: moving the row pointer
-// sideways only moves in whole bytes, so it would snap to a multiple of 8. The
-// primitives below intersect their own rects against it instead, which is exact
-// for fills and bitmaps; text is confined to the rect it was given.
+// FreeInkUI has no clipping, so the clip is enforced by the framebuffer VIEW:
+// the windowed DisplayTarget starts at the clip's first row and its logical
+// frame ends at the clip's last row and right edge, so plot's own bounds check
+// drops everything above, below and to the right — glyph pixels included. The
+// left edge cannot be said that way, because moving the row pointer sideways
+// snaps to whole bytes; the primitives intersect their rects against it
+// instead, which is exact for fills and bitmaps, and text is confined to the
+// rect it was given.
 
 bool clipping() { return g_clip.width > 0 && g_clip.height > 0; }
 
@@ -728,12 +710,8 @@ void xpui_fui_draw_list(const int32_t x, const int32_t y, const int32_t w, const
     // Not even one whole row fits: the component would refuse to draw a partial
     // row anyway, and a scroll indicator beside nothing would be a lie.
     if (visible < 1) return;
-    // Deliberately NOT scrolled to keep `selected` in view, tempting as that
-    // is. xpui owns scrolling: a `ScrollView` translates this rect's origin,
-    // and `List::interactions` declares its touch rects as row 0 at the top of
-    // the rect it was given. A shim that scrolled independently would paint
-    // row N where the framework registered row 0 — every tap off by the scroll
-    // distance, and nothing about the screen looking wrong.
+    // Deliberately NOT scrolled to keep `selected` in view: xpui owns
+    // scrolling, as `xpui_fui.h` says on this function.
     top = 0;
     shown = rows - top < visible ? rows - top : visible;
     if (shown <= 0) return;
@@ -856,14 +834,10 @@ uint8_t xpui_fui_option_popup_row_rect(const uint8_t* title, const int32_t count
 
 // -- display -----------------------------------------------------------------
 
-// The panel. This shim owns a framebuffer, not a display driver, so the default
-// does nothing; a firmware defines this symbol to push the frame it just drew
-// (freeink::ui::present(display, hint) is the SDK's one-liner for that).
+// The weak default; `xpui_fui.h` says how a firmware supplies its own.
 __attribute__((weak)) void xpui_fui_present(void) {}
 
-// Set by xpui_fui_set_present. Preferred over overriding the weak symbol above,
-// because whether an override wins depends on the object format and the
-// failure is silent: a panel that never updates.
+// Set by xpui_fui_set_present, and preferred; see the header.
 static void (*g_present)(void) = 0;
 
 void xpui_fui_set_present(void (*present)(void)) { g_present = present; }

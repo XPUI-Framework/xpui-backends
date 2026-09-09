@@ -9,14 +9,13 @@ edition.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-# The C++ half has to reach a consuming firmware's build, so it ships with the
-# crate rather than only living in the repository.
-# `cpp/**` is not optional: it is the shim, and a package without it is a
-# backend a C++ host cannot link. `docs/**` ships the design notes and the
-# coverage table beside the crate they describe — nothing `include_str!`s them
-# any more, since the tutorial that did moved to `xpui-cpp`, so this one is a
-# choice rather than a requirement.
+# The C++ half ships with the crate: `cpp/**` is the shim, and a package
+# without it is a backend a C++ host cannot link. `docs/**` ships the design
+# notes and the coverage table beside the crate they describe.
 include = ["src/**", "cpp/**", "docs/**", "README.md"]
+
+[lints]
+workspace = true
 
 [lib]
 name = "xpui_fui"

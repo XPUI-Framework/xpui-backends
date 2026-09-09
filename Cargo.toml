@@ -1,18 +1,15 @@
 # The two backends, and the two test utilities they own.
 #
-# A backend teaches `xpui` how to paint. These two are the shapes a third will
-# be: `xpui-embedded-graphics` hand-writes four host traits and takes `Chrome`
-# from a macro, `xpui-fui` hand-writes all five over a C ABI and depends on
-# nothing but the framework.
+# A backend teaches `xpui` how to paint: `xpui-embedded-graphics` hand-writes
+# four host traits and takes `Chrome` from a macro, `xpui-fui` hand-writes all
+# five over a C ABI and depends on nothing but the framework.
 #
-# `xpui-abi-check` and `xpui-screenshot` are here because these crates own
-# them: the first compares a C header against the Rust that answers it, which
-# is `fui`'s boundary and the C++ host's; the second is the host framebuffer
-# and its golden images, which is how a backend proves pixels without a panel.
+# `xpui-abi-check` compares a C header against the Rust that answers it — the
+# `fui` boundary and the C++ host's; `xpui-screenshot` is the host framebuffer
+# and its golden images, how a backend proves pixels without a panel.
 [workspace]
 # `xtask` is the gate. A member rather than a separate workspace so one
-# `cargo test` reaches its tests, and so the size ratchet counts its source
-# like any other.
+# `cargo test` reaches its tests.
 members = ["abi-check", "embedded_graphics", "fui", "screenshot", "xtask"]
 resolver = "3"
 
@@ -35,15 +32,17 @@ xpui-abi-check = { path = "abi-check" }
 # `features = ["golden"]` and says so at its own call site.
 xpui-screenshot = { path = "screenshot", default-features = false }
 
-# What a `cargo build --release` of this repository alone produces.
-#
-# It is **not** what ships. A library's profile applies only when that library
-# is the top of the build; when a firmware links it, the firmware's workspace
-# sets the profile for everything in the graph. So this exists to make a local
-# release build resemble the real one, not to control it.
-#
-# The repositories that do produce a flashed artifact — `xpui-rp2040`,
-# `xpui-esp32`, `xpui-cpp` — use `opt-level = "z"` and say why there.
+[workspace.lints.clippy]
+undocumented_unsafe_blocks = "deny"
+too_long_first_doc_paragraph = "deny"
+
+[workspace.lints.rustdoc]
+unescaped_backticks = "deny"
+
+# What a `cargo build --release` of this repository alone produces — not what
+# ships. A library's profile applies only at the top of a build; a firmware's
+# workspace sets the profile for everything it links; `xpui-rp2040`,
+# `xpui-esp32` and `xpui-cpp` use `opt-level = "z"`.
 [profile.release]
 opt-level = "s"
 lto = true

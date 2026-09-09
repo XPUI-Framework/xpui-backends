@@ -21,15 +21,8 @@
 //! assert!(!frame.get(0, 0));
 //! ```
 //!
-//! Any `DrawTarget` works the same way, which is the point: a backend pointed
-//! at one of these instead of a panel draws exactly what it would have drawn.
-//! A caller holding a `Backend` reaches it through `with_display`.
-//!
 //! Comparing a frame against a committed PNG is the `golden` module, behind
-//! the feature of the same name. Nothing here needs it: `to_png` and
-//! `from_png` are the format those goldens are in and are gated with it, while
-//! [`Framebuffer::thumbnail`] and [`Framebuffer::write_bmp`] are always here
-//! and are for looking, not for asserting.
+//! the feature of the same name.
 
 use std::fs;
 use std::path::PathBuf;
@@ -121,8 +114,9 @@ impl Framebuffer {
 
     /// A coarse ASCII view, `columns` characters wide.
     ///
-    /// Deliberately lossy, and never an assertion: a block is 8x16 pixels, so
-    /// a shift smaller than that is invisible to it. It is for *reading* — in
+    /// Deliberately lossy, and never an assertion: a block is `width /
+    /// columns` pixels wide and twice that tall, so a shift smaller than that
+    /// is invisible to it. It is for *reading* — in
     /// a failed screenshot's message, or a `println!` while debugging — where
     /// showing a list that moved or a dialog off-centre is the whole job.
     pub fn thumbnail(&self, columns: i32) -> String {
@@ -292,19 +286,14 @@ impl Framebuffer {
     }
 }
 
-/// Where [`Framebuffer::write_bmp`] puts things.
+/// Where [`Framebuffer::write_bmp`] puts things: `$XPUI_SCREENSHOT_DIR` if
+/// set, else `target/screenshots` relative to the working directory.
 ///
-/// `$XPUI_SCREENSHOT_DIR` if set, else `target/screenshots` relative to the
-/// working directory. Cargo runs an integration test with the working
-/// directory at its own crate root, which in a workspace is *not* where the
-/// shared `target/` is — so a test that wants them all in one place passes
-/// `env!("CARGO_TARGET_TMPDIR")` to [`Framebuffer::write_bmp_in`] instead.
-/// That variable is set at compile time and does point inside the workspace's
-/// target directory.
-///
-/// Public so anything else that writes a frame for a person to look at — a
-/// simulator's screenshot key — puts it in the same place rather than
-/// inventing a second convention.
+/// Cargo runs an integration test with the working directory at its own crate
+/// root, which in a workspace is *not* where the shared `target/` is, so a
+/// test that wants them all in one place passes `env!("CARGO_TARGET_TMPDIR")`
+/// to [`Framebuffer::write_bmp_in`]. Public so a simulator's screenshot key
+/// puts frames in the same place.
 pub fn screenshot_dir() -> PathBuf {
     match std::env::var("XPUI_SCREENSHOT_DIR") {
         Ok(dir) => PathBuf::from(dir),

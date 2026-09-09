@@ -1,9 +1,5 @@
-# The host-side framebuffer and the golden images taken from it.
-#
-# Split out of `xpui-embedded-graphics` because it was the only `std` in that
-# crate and the only thing that wanted `png`, while the rest of it builds for
-# bare metal. A backend that draws on hardware and a harness that writes PNGs
-# are not one job.
+# The host-side framebuffer and the golden images taken from it. A backend
+# that draws on hardware and a harness that writes PNGs are not one job.
 [package]
 name = "xpui-screenshot"
 description = "A host-side framebuffer for xpui backends, and golden-image comparison"
@@ -15,6 +11,9 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 readme = "README.md"
+
+[lints]
+workspace = true
 
 [lib]
 name = "xpui_screenshot"

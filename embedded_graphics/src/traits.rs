@@ -46,16 +46,9 @@ impl<D: DrawTarget> InputSource for Backend<D> {
         self.frame.with_ref(|frame| frame.input.has_touch())
     }
 
-    /// What the caller said, rather than what the frame carries: this
-    /// describes the device and does not change between one frame and the
-    /// next.
-    ///
-    /// This backend draws on any `DrawTarget` and has no way to know what is
-    /// around it. Whoever built it does, and says so with
-    /// [`with_left_right_keys`](crate::Backend::with_left_right_keys). A
-    /// caller that says nothing gets `false`, which leaves a value enterable
-    /// and leavable rather than unchangeable — the wrong answer in the only
-    /// direction that stays usable.
+    /// What the caller said with
+    /// [`with_left_right_keys`](crate::Backend::with_left_right_keys), rather
+    /// than what the frame carries: this describes the device.
     fn has_left_right_keys(&self) -> bool {
         self.left_right_keys
     }

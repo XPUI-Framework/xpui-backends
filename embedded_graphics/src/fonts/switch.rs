@@ -1,22 +1,13 @@
 //! How a screen asks for the type to change.
 //!
-//! A screen holds a `&dyn Host` and nothing more, and that is deliberate: the
-//! framework must not know what a typeface is, so there is no seam in it to
-//! carry this. The request therefore goes past the framework rather than
-//! through it — a screen leaves a family here, and the backend picks it up at
-//! the top of the next frame.
-//!
-//! **A standing choice, not a one-shot.** What is kept here is the family the
-//! application has chosen, and every backend reconciles itself against it as
-//! it opens a frame. That matters as soon as there is more than one backend: a
-//! simulator holds one per board, and a choice that were consumed by the first
-//! to see it would be silently undone by switching board — the picker still
-//! showing "In use" beside a family nothing is set in.
-//!
-//! **Between frames, not during one.** A family applied mid-frame would leave
-//! a screen measured in one face and painted in another, and nothing would
-//! report it. [`Backend::begin_frame`] is the one moment nothing has been
-//! measured yet.
+//! The framework must not know what a typeface is, so there is no seam in it
+//! to carry this: a screen leaves a family here, and each backend picks it up
+//! at the top of its next frame. **A standing choice, not a one-shot** — a
+//! simulator holds one backend per board, and a choice consumed by the first
+//! to see it would be silently undone by switching board. **Between frames,
+//! not during one** — a family applied mid-frame leaves a screen measured in
+//! one face and painted in another, and [`Backend::begin_frame`] is the one
+//! moment nothing has been measured yet.
 //!
 //! [`Backend::begin_frame`]: crate::Backend::begin_frame
 

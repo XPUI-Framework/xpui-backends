@@ -6,8 +6,7 @@
 //! image can show any of that. This one records *pixels*, and is an image
 //! because no text can show those without throwing most of them away.
 //!
-//! `no_run` because it writes a golden when one does not exist yet, which
-//! does not belong in a documentation build:
+//! `no_run`: it writes a golden when one does not exist yet.
 //!
 //! ```rust,no_run
 //! # use embedded_graphics::pixelcolor::BinaryColor;
@@ -24,15 +23,8 @@
 //! assert!(frame.ink_in(4, 4, 16, 8) > 0);            // and what a picture cannot say
 //! ```
 //!
-//! When the change is intended:
-//!
-//! ```bash
-//! UPDATE_SNAPSHOTS=1 cargo test
-//! ```
-//!
-//! which rewrites every golden the run touched. Open them before committing —
-//! a blessed screenshot is an assertion you have made, and blessing a
-//! regression is the one failure mode this technique has.
+//! `UPDATE_SNAPSHOTS=1 cargo test` rewrites every golden the run touched. Open
+//! them before committing: a blessed screenshot is an assertion you have made.
 
 mod compare;
 mod report;
@@ -65,26 +57,15 @@ pub fn assert_screenshot(name: &str, frame: &Framebuffer) {
 
 /// The same comparison, as a `Result`.
 ///
-/// For a caller capturing many frames in one test: it can gather what every
-/// one of them said and report them together, where [`assert_screenshot`]
-/// would stop at the first. `Err` holds the whole report, ready to print —
-/// the same text the assertion would have panicked with.
+/// For a caller capturing many frames in one test and reporting them together
+/// where [`assert_screenshot`] would stop at the first. `Err` holds the whole
+/// report, ready to print — a `String` rather than an error type because
+/// there is nothing in it a caller could match on.
 ///
-/// A caller that wants one frame checked should use [`assert_screenshot`],
-/// which puts the failure where it happened.
-///
-/// A `String` rather than an error type, against this crate's habit: the
-/// `Err` is a finished report — a pixel count, a bounding box, two ASCII views
-/// and a path — and its only use is to be printed. There is nothing in it a
-/// caller could match on.
-///
-/// It still panics rather than returning `Err` when the harness itself is
-/// broken: a golden that reads but does not decode, or one that cannot be
-/// written — no directory to put it in, or a file that will not take it.
-/// Neither is a screen having changed, and gathering them into a report of
-/// what moved would file them under the wrong heading. A golden that cannot be
-/// *opened* is not one of these — that is indistinguishable from one that is
-/// not there yet, and takes the same path as a new capture.
+/// It still panics when the harness itself is broken: a golden that reads but
+/// does not decode, or one that cannot be written. Neither is a screen having
+/// changed. A golden that cannot be *opened* is indistinguishable from one
+/// that is not there yet, and takes the same path as a new capture.
 pub fn check_screenshot(name: &str, frame: &Framebuffer) -> Result<(), String> {
     let path = path_for(name);
     let existing = fs::read(&path).ok();
@@ -176,16 +157,9 @@ mod tests {
     }
 
     /// **The line every pixel assertion in the organisation stands on.**
-    ///
-    /// Each one is this function returning `Err`: eighty-two of them, and only
-    /// seven are in this repository. Seventy-three are `xpui-gallery`'s —
-    /// seventy board captures and three families — and two are the tutorial
-    /// screen's, beside them. The eighty-third is this test's own probe, here.
-    ///
-    /// Replace its last two lines with `Ok(())` and the whole suite still
-    /// passes while nothing is compared at all, which is the one failure this
-    /// technique cannot survive. So it is checked here, on a golden kept for
-    /// the purpose.
+    /// Replace `check_screenshot`'s last two lines with `Ok(())` and every
+    /// suite still passes while nothing is compared at all, so it is checked
+    /// here, on a golden kept for the purpose.
     #[test]
     fn a_frame_that_differs_from_its_golden_comes_back_as_an_error() {
         let _guard = RESOLVING
@@ -241,12 +215,10 @@ mod tests {
             path.display()
         );
 
-        // The property this test exists for is that the root is read at *run*
-        // time, from whichever crate is under test. Asserting against
-        // `env!(..)` cannot show that: inside one crate the compile-time and
-        // run-time values are the same string, so a resolver that hardcoded
-        // its own directory would pass. Move the variable and the answer has
-        // to move with it, or every consumer's goldens land in this crate.
+        // The root has to be read at *run* time, from whichever crate is under
+        // test. Asserting against `env!(..)` cannot show that — inside one
+        // crate the two values are the same string — so the variable is
+        // moved, and the answer has to move with it.
         //
         // Safety: `set_var` is not thread-safe, and `RESOLVING` is what makes
         // this block single-threaded — the other test that resolves a path

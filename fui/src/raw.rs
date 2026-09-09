@@ -1,19 +1,17 @@
 //! The C ABI, in one place.
 //!
-//! Every symbol here is implemented by `cpp/xpui_fui.cpp` against FreeInkUI.
-//! Keep the two in step: a mismatch is a link error at best and a corrupt call
-//! frame at worst, and nothing checks that they agree.
+//! Every symbol here is implemented by `cpp/xpui_fui.cpp` against FreeInkUI
+//! and doubled in `testing/stubs.rs`. A mismatch is a link error at best and
+//! a corrupt call frame at worst; `tests/abi.rs` compares the three.
 //!
 //! Strings cross as `*const u8` rather than `*const c_char`, because `char`'s
 //! signedness is implementation-defined and the C++ side would otherwise need
 //! a cast per argument. They are NUL-terminated either way.
 //!
-//! `safe fn` marks a call that needs no contract from us: it passes no
-//! pointer, the C++ side guards its own state, and no argument can reach
-//! undefined behaviour. Everything taking a raw pointer stays `unsafe`, so the
-//! keyword keeps meaning "there is a rule here you must keep" rather than
-//! "this crosses into C++", which is true of every line and therefore says
-//! nothing.
+//! `safe fn` marks a call that passes no pointer and cannot reach undefined
+//! behaviour. Everything taking a raw pointer stays `unsafe`, so the keyword
+//! keeps meaning "there is a rule here you must keep" rather than "this
+//! crosses into C++", which is true of every line.
 
 use core::ffi::c_void;
 

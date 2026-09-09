@@ -71,9 +71,9 @@ impl Cells {
     }
 }
 
-/// # Safety
-/// `ctx` must be the pointer from [`Cells::as_context`] of a `Cells` still
-/// alive for the duration of the call it was passed to.
+/// Safe to call, and only meaningful when `ctx` is the pointer from
+/// [`Cells::as_context`] of a `Cells` still alive for the call: anything
+/// else is answered with null rather than dereferenced.
 pub(crate) extern "C" fn cell_trampoline(ctx: *mut c_void, index: i32, field: i32) -> *const u8 {
     if ctx.is_null() {
         return core::ptr::null();

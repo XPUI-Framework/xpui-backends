@@ -61,9 +61,8 @@ impl<D: DrawTarget> Canvas for Backend<D> {
     /// is on loan for a present. A layout measured against zero collapses
     /// silently, and this is called from inside every `body()`.
     ///
-    /// Two consequences of asking once: a target that could resize would go
-    /// stale here — none in this workspace can — and `Backend::new` now calls
-    /// `bounding_box()` during construction, which it did not before.
+    /// A target that could resize would go stale here; none in this
+    /// workspace can.
     fn screen_size(&self) -> Size {
         self.frame.with_ref(|frame| frame.size)
     }

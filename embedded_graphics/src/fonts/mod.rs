@@ -7,14 +7,8 @@
 //!
 //! **A role names a size, not a face.** [`Fonts`] holds a [`Family`] and the
 //! line height each role wants; the family answers with the tier it was
-//! actually cut in. Swapping the family therefore keeps the design — a heading
-//! stays a heading's height — and cannot carry the old family's sizes into a
-//! chrome that has no room for them.
-//!
-//! **Measurement sums real advances.** These faces are proportional, so a
-//! width is the sum of what each glyph advances the pen, glyph by glyph. A
-//! backend that multiplied a mean advance would lay a screen out correctly and
-//! paint it off the edge.
+//! actually cut in, so swapping the family keeps the design and cannot carry
+//! the old family's sizes into a chrome that has no room for them.
 
 mod family;
 mod resolve;
@@ -49,13 +43,10 @@ pub struct Fonts {
 impl Fonts {
     /// The set for the default chrome: a reader held with buttons.
     ///
-    /// 30 pixels of line is **3.4mm** of glass at 218 ppi and 2.9mm at 257 —
-    /// the size the firmware this framework was written beside puts its body
-    /// text at, and the size below which a person stops reading a label and
-    /// starts recognising its shape. The secondary height is far enough below
-    /// to read as secondary, and the reading height a step above the interface
-    /// one, because a page of prose is read for minutes and a label for a
-    /// second.
+    /// 30 pixels of line is 3.5mm of glass at 218 ppi and 3.0mm at 257: the
+    /// size below which a person stops reading a label and starts recognising
+    /// its shape. The reading height is a step above, because a page of prose
+    /// is read for minutes and a label for a second.
     pub const DEFAULT: Fonts = Fonts {
         family: &HELVETICA,
         ui: 30,
@@ -104,10 +95,9 @@ impl Fonts {
     /// than directly: scaling the chrome up moves the row across a threshold,
     /// and the type follows it.
     ///
-    /// The thresholds sit between the row heights the presets actually use —
-    /// 24 on a strip, 30 on a small panel, 40 on a reader, and 48 once a touch
-    /// board's scale is applied.
-    ///
+    /// The thresholds sit between the row heights the presets use — 24 on a
+    /// strip, 30 on a small panel, 40 on a reader, and 48 once a touch board's
+    /// scale is applied.
     pub const fn for_metrics(metrics: &Metrics) -> Fonts {
         match metrics.list_row_height {
             44.. => Fonts::LARGE,
@@ -140,19 +130,12 @@ impl Fonts {
         self.family.tier_for(self.height(role))
     }
 
-    /// The id this backend reports for a role.
-    ///
-    /// The tier's bytes **and the family's name**, so anything keyed on an id
-    /// invalidates without being told. Both halves are needed: the bytes
-    /// because a face swapped for different ones has to move the id, and the
-    /// name because a tier may be shared between families that resolve
-    /// differently — two families over one tier, differing only in what they
-    /// fall back to, draw the same string differently and must not claim the
-    /// same id for it.
-    ///
-    /// The family's name is hashed here, on every call, and blended with the
-    /// tier's own id. A dozen byte operations against a glyph lookup for every
-    /// character that follows, so it is not worth caching.
+    /// The id this backend reports for a role: the tier's bytes **and the
+    /// family's name**. Both halves are needed — a face swapped for different
+    /// bytes has to move the id, and two families over one tier that differ
+    /// only in what they fall back to draw the same string differently and
+    /// must not claim the same id. Hashed on every call: a dozen byte
+    /// operations against a glyph lookup per character, not worth caching.
     pub fn id(&self, role: FontRole) -> FontId {
         blend(self.tier(role).id, self.family)
     }

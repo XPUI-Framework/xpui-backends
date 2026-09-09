@@ -1,53 +1,7 @@
 //! A display whose solid fills go out one pixel at a time.
 //!
-//! An 8080-style parallel panel latches a byte on the rising edge of its write
-//! strobe, and the controller has a minimum write *cycle* — 66 ns on the
-//! ST7789v — that the strobe has to respect. When every pixel of a run has the
-//! same *byte in both halves*, `mipidsi` sends the word once and then loops on
-//! the strobe alone:
-//!
-//! ```text
-//! wr.set_low();
-//! wr.set_high();
-//! ```
-//!
-//! Two register stores. On a 125 MHz RP2040 in release that is a write cycle
-//! of roughly 24–40 ns — comfortably inside the controller's minimum, so it
-//! mislatches, and the fill arrives as noise.
-//!
-//! **What costs enough time on the ordinary path is the call, not the pins.**
-//! `Generic8BitBus::set_value` returns early when the value is unchanged
-//! (`mipidsi`'s `interface/parallel.rs`: *"quite common for multiple
-//! consecutive values to be identical … so let's optimize for that case"*), so
-//! the pins are skipped there too. `send_word` stays out of line at
-//! `opt-level = "z"`, and that call is what stretches the cycle — incidental
-//! codegen, worth knowing because inlining it would bring the fault back with
-//! nothing changed in this file.
-//!
-//! The trap is that the shortcut triggers whenever the two bytes of the pixel
-//! are **identical**, which for `Rgb565` is **256** values and not two —
-//! `0x0000` and `0xFFFF` among them, but `0x1818` is a dark blue that takes the
-//! same path. Ink and background are two of the 256, so on a monochrome-styled
-//! panel *every* filled rectangle and every screen clear breaks while text —
-//! drawn pixel by pixel — comes out perfectly. A panel showing crisp type over
-//! static is this bug, and it reads like a framework fault rather than a timing
-//! one.
-//!
-//! So fills are routed through `fill_contiguous`, which has a colour for every
-//! pixel and therefore no run to shorten. A whole 320x240 screen is
-//! instruction-counted at **roughly 120 ms** that way — a loop interval is
-//! 10 ms, so this is not free — and **that figure has not been measured on the
-//! board**. Measure it before quoting it.
-//!
-//! Wanted only by a parallel bus. An SPI panel clocks its own bytes out and a
-//! framebuffer has no timing at all, so neither is wrapped — this is opt-in,
-//! and a target that does not need it should not pay for it.
-//!
-//! It lives here rather than beside the firmware that needs it because it
-//! names no HAL, no pin and no board: it is a `DrawTarget` that wraps a
-//! `DrawTarget`. Beside the firmware it was untestable, and the property it
-//! exists for — that two methods are *not* forwarded — is invisible on the
-//! host, invisible in every snapshot, and only appears on hardware.
+//! Opt-in: an SPI panel clocks its own bytes and a framebuffer has no timing,
+//! so neither is wrapped.
 
 use embedded_graphics::draw_target::DrawTarget;
 use embedded_graphics::geometry::Dimensions;
@@ -55,6 +9,9 @@ use embedded_graphics::prelude::*;
 use embedded_graphics::primitives::Rectangle;
 
 /// Wraps a display, replacing its repeated-pixel path with a per-pixel one.
+///
+/// `mipidsi` shortens a run of one colour into a strobe loop that outruns an
+/// 8080-style controller's write cycle, and the fill lands as noise.
 pub struct PacedFill<D>(D);
 
 impl<D> PacedFill<D> {

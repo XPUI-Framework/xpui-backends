@@ -90,14 +90,9 @@ const _: raw::CellFn = cell_trampoline;
 #[doc(hidden)]
 pub type Context = *mut c_void;
 
-/// The crate's prose, compiled.
-///
-/// A README that does not build is worse than none: this crate's only usage
-/// example passed the wrong form to its own macro for as long as nothing
-/// tried it.
-///
-/// The tutorial for integrating this backend into a C++ application is in
-/// `xpui-cpp`, with the host whose header its snippets include.
+/// The crate's prose, compiled: a README that does not build is worse than
+/// none. The tutorial for integrating this backend into a C++ application
+/// is in `xpui-cpp`, with the host whose header its snippets include.
 #[cfg(doctest)]
 mod guides {
     #[doc = include_str!("../README.md")]
@@ -106,14 +101,11 @@ mod guides {
 
 /// The source of [`register_screen!`], for an ABI checker to parse.
 ///
-/// The macro generates the factory functions a C++ application exports, so no
-/// Rust file spells their signatures out — the only place they exist is the
-/// macro's own body. `xpui-cpp` checks its `xpui_app.h` against them, and
-/// after the split it cannot reach this file by path: a git dependency lands
-/// in a cargo checkout directory, not beside the crate that reads it.
-///
-/// So the crate that owns the macro hands out its text rather than a sibling
-/// guessing at a path. Behind `testing` because a `&'static str` of a source
-/// file is bytes a firmware has no use for.
+/// The macro generates the factory functions a C++ application exports, so
+/// their signatures exist only in the macro's own body — and `xpui-cpp`,
+/// which checks its header against them, cannot reach this file by path: a
+/// git dependency lands in a cargo checkout directory. So the crate hands
+/// out its text. Behind `testing` because a firmware has no use for a source
+/// file's bytes.
 #[cfg(any(test, feature = "testing"))]
 pub const LIFECYCLE_SOURCE: &str = include_str!("lifecycle.rs");

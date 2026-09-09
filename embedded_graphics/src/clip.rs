@@ -25,9 +25,7 @@ impl<D: DrawTarget> Backend<D> {
 ///
 /// `DrawTargetExt::clipped` drops out-of-area pixels inside the target, which
 /// is the only way to clip *text*: glyphs are rasterised by the font, and
-/// intersecting rectangles beforehand cannot cut one in half. Doing it by
-/// arithmetic instead is a bug this backend shipped once — a list scrolled
-/// under the header painted its rows straight over it.
+/// intersecting rectangles beforehand cannot cut one in half.
 ///
 /// A macro rather than a function because the two arms have different target
 /// types and `DrawTarget` is not object-safe.

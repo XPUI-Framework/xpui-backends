@@ -10,6 +10,9 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 
+[lints]
+workspace = true
+
 [lib]
 name = "xpui_eg"
 crate-type = ["rlib"]
@@ -32,7 +35,7 @@ u8g2-fonts = "0.8"
 # **No `-impl` feature, and never one.** A binary must have exactly one
 # implementation of `critical-section` — the acquire symbol is process-wide —
 # so a *library* that supplies one breaks every downstream that already has
-# its own. This depends on the API alone; `examples/rp2040` gets the
+# its own. This depends on the API alone; `xpui-rp2040` gets the
 # implementation from `embassy-rp`.
 critical-section = { version = "1.2", optional = true }
 

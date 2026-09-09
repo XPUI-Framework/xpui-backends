@@ -16,16 +16,11 @@ pub trait Platform: Sync {
 
     /// See [`InputSource::has_left_right_keys`](xpui::host::InputSource::has_left_right_keys).
     ///
-    /// **Required, unlike everything below it**, because no answer is safe to
-    /// inherit. A firmware that said nothing would leave a value control
-    /// guessing, and the wrong guess is either a control no key can change or a
-    /// mode a reader never needed. Only the firmware knows which keys its
-    /// device carries.
-    ///
-    /// the `xpui-boards-*` crates have the answer for every board described there, as
-    /// `Board::has_left_right_keys` — worth checking against, because a
-    /// firmware and that crate describing the same device differently is a
-    /// disagreement nothing here can detect. This crate does not depend on it.
+    /// **Required, unlike everything below it**: no answer is safe to inherit,
+    /// and only the firmware knows which keys its device carries. The
+    /// `xpui-boards-*` crates answer it for every board described there, as
+    /// `Board::has_left_right_keys`; a firmware describing the same device
+    /// differently is a disagreement nothing here can detect.
     fn has_left_right_keys(&self) -> bool;
 
     /// Whether *this frame* carries a touch — not whether the device has a

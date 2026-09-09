@@ -1,8 +1,9 @@
 // The C ABI between xpui's Rust side and FreeInkUI.
 //
-// This header is the contract. `src/raw.rs` declares exactly these symbols and
-// `xpui_fui.cpp` defines them; all three move together, and nothing checks
-// that they agree, so a change here is a change in three places.
+// This header is the contract. `src/raw.rs` declares exactly these symbols,
+// `xpui_fui.cpp` defines them and `src/testing/stubs.rs` doubles them; all
+// four move together, and `tests/abi.rs` and the gate's `symbols_agree` fail
+// when they do not.
 //
 // Strings are NUL-terminated `const uint8_t*` rather than `const char*`,
 // because `char`'s signedness is implementation-defined and Rust's `u8` is
@@ -93,20 +94,15 @@ int32_t xpui_fui_line_height(int32_t font_id);
 
 // -- theme -------------------------------------------------------------------
 
-// A geometry value, tagged by xpui's ThemeMetric. The tags are, in order:
-//   0 TopPadding      1 HeaderHeight        2 VerticalSpacing  3 ButtonHintsHeight
-//   4 ContentSidePadding                    5 ContentTop       6 ContentBottom
-//   7 ListRowHeight   8 ListRowHeightWithSubtitle              9 ProgressBarHeight
-//  10 MinTouchSize   11 SliderKnobWidth    12 SliderKnobHeight
-//  13 SliderSideInset                      14 ListRowGap      15 SubHeaderHeight
-//  16 SpacingSmall
+// A geometry value, tagged by xpui's ThemeMetric: 0 TopPadding, 1 HeaderHeight,
+// 2 VerticalSpacing, 3 ButtonHintsHeight, 4 ContentSidePadding, 5 ContentTop,
+// 6 ContentBottom, 7 ListRowHeight, 8 ListRowHeightWithSubtitle,
+// 9 ProgressBarHeight, 10 MinTouchSize, 11 SliderKnobWidth, 12 SliderKnobHeight,
+// 13 SliderSideInset, 14 ListRowGap, 15 SubHeaderHeight, 16 SpacingSmall. The
+// numbering is NOT declaration order; read it from this list.
 //
-// Note 14: the numbering is NOT contiguous with the names' declaration order.
-// Read them from this list, not from intuition.
-//
-// SliderKnobWidth, SliderKnobHeight and SliderSideInset must be the numbers
-// the slider is actually PAINTED with — the caller converts a touch into a
-// value using them, so a mismatch makes the knob lag the finger.
+// The three slider values must be the numbers the slider is PAINTED with: the
+// caller converts a touch into a value with them.
 int32_t xpui_fui_metric(uint8_t metric);
 
 // The title band. Either pointer may be null, meaning "nothing for that part".
@@ -123,14 +119,10 @@ void xpui_fui_draw_sub_header(int32_t x, int32_t y, int32_t w, int32_t h, const 
 // reorders them for the user's button layout.
 //
 // A NULL pointer means "a word of your own", and the `*_word` beside it says
-// which: 0 this slot's usual label, 1 Edit, 2 Done, 3 Cancel.
-// An EMPTY STRING means the screen asked for that slot to be blank.
-// These are different, and confusing them is the most likely bug in this file.
-//
-// The three extra words exist because a value control on a device with no
-// Left/Right pair changes what the keys do, and the bar has to say so. They are
-// yours to translate, exactly as the four usual labels are — the framework does
-// not know what language the reader uses.
+// which: 0 this slot's usual label, 1 Edit, 2 Done, 3 Cancel. An EMPTY STRING
+// means the screen asked for that slot to be blank; the two are different. The
+// three extra words are yours to translate, as the four usual labels are: a
+// value control on a device with no Left/Right pair changes what the keys do.
 void xpui_fui_draw_button_hints(const uint8_t* back, int32_t back_word, const uint8_t* confirm, int32_t confirm_word,
                                 const uint8_t* previous, int32_t previous_word, const uint8_t* next, int32_t next_word);
 

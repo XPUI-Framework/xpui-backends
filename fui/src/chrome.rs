@@ -17,12 +17,16 @@ impl<P: Platform> Chrome for Backend<P> {
     fn draw_header(&self, title: Option<&str>, subtitle: Option<&str>) {
         let title = optional(title);
         let subtitle = optional(subtitle);
+        // Safety: each pointer is null or a NUL-terminated local that outlives
+        // the call.
         unsafe { raw::xpui_fui_draw_header(ptr_of(&title), ptr_of(&subtitle)) }
     }
 
     fn draw_sub_header(&self, rect: Rect, label: &str, right: Option<&str>) {
         let label = as_c(label);
         let right = optional(right);
+        // Safety: `label` is NUL-terminated, `right` null or the same, and
+        // both outlive the call.
         unsafe {
             raw::xpui_fui_draw_sub_header(
                 rect.x(),
@@ -45,6 +49,8 @@ impl<P: Platform> Chrome for Backend<P> {
             optional(previous.label()),
             optional(next.label()),
         ];
+        // Safety: `slots` outlives the call, and each pointer is null or one
+        // of its NUL-terminated strings.
         unsafe {
             raw::xpui_fui_draw_button_hints(
                 ptr_of(&slots[0]),
@@ -105,6 +111,7 @@ impl<P: Platform> Chrome for Backend<P> {
         // props borrow these pointers rather than copying, so nothing may
         // outlive `cells` and `cells` may not move.
         let cells = Cells::rows(rows, row);
+        // Safety: `cells` lives, unmoved, until the explicit drop below.
         unsafe {
             raw::xpui_fui_draw_list(
                 rect.x(),
@@ -129,6 +136,8 @@ impl<P: Platform> Chrome for Backend<P> {
     ) {
         let title = as_c(title);
         let cells = Cells::options(count, options);
+        // Safety: `title` is NUL-terminated, and both it and `cells` live,
+        // unmoved, until the explicit drop below.
         unsafe {
             raw::xpui_fui_draw_option_popup(
                 title.as_ptr().cast(),
@@ -153,7 +162,8 @@ impl<P: Platform> Chrome for Backend<P> {
         }
         let title = as_c(title);
         let mut out = [0i32; 4];
-        // Safety: `out` is four `i32`s, which is what the C++ side writes.
+        // Safety: `title` is NUL-terminated and lives past the call, and `out`
+        // is four `i32`s, which is what the C++ side writes.
         let ok = unsafe {
             raw::xpui_fui_option_popup_row_rect(
                 title.as_ptr().cast(),

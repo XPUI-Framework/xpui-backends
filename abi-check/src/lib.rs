@@ -86,11 +86,8 @@ pub(crate) fn without_comments(text: &str) -> String {
 
 /// Compares one pair, and says exactly what differs.
 pub fn assert_agree(what: &str, c_side: &Signatures, rust_side: &Signatures) {
-    // Two empty maps agree perfectly, and that is the one way this whole file
-    // can report agreement it never established — a parser that stops
-    // understanding the real headers would leave all five comparisons green.
-    // A caller's own fixtures cannot catch that: they parse inline text, not
-    // the real headers.
+    // A caller's own fixtures cannot catch an empty parse: they parse inline
+    // text, not the real headers.
     assert!(
         !c_side.is_empty(),
         "{what}: nothing was parsed from the C side. A comparison over an empty \

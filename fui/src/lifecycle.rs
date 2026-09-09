@@ -1,28 +1,15 @@
 //! The lifecycle a C++ host drives a screen through.
 //!
-//! A host that owns its own screen stack — a firmware's activity manager, the
-//! C++ example under `examples/cpp_host` — holds one screen at a time as an
-//! opaque handle and calls the six entry points below. They live here rather
-//! than in `xpui` because they are the C boundary, and this crate is the one
-//! that has a C boundary.
+//! A host that owns its own screen stack holds one screen at a time as an
+//! opaque handle and calls the six entry points below, declared for C++ in
+//! `cpp/xpui_screen.h`. They live here rather than in `xpui` because they
+//! are the C boundary.
 //!
-//! Declared for C++ in [`cpp/xpui_screen.h`](../cpp/xpui_screen.h). That
-//! header and this file are two of the three places every symbol here exists;
-//! the third is the host that calls them.
-//!
-//! # The handle is boxed twice
-//!
-//! [`Driver`] is a trait object, so `Box<dyn Driver>` is a fat pointer — two
-//! words — and cannot cross as one `void*`. The inner box erases the screen
-//! type; the outer one gives a thin pointer that can. Every function here
-//! reverses exactly that, and getting it wrong is not a compile error: it is a
-//! wild pointer.
-//!
-//! # Two deliberate differences from the firmware this mirrors
-//!
-//! CrossPoint's `backend_rs::lifecycle` is the same shape with two additions
-//! that would be wrong here, noted at their sites below: a `renderer` argument
-//! on `render`, and installing the host from two entry points.
+//! **The handle is boxed twice.** [`Driver`] is a trait object, so
+//! `Box<dyn Driver>` is a fat pointer and cannot cross as one `void*`: the
+//! inner box erases the screen type, the outer gives a thin pointer. Every
+//! function here reverses exactly that, and getting it wrong is not a compile
+//! error — it is a wild pointer.
 
 use alloc::boxed::Box;
 use core::ffi::c_void;
@@ -76,24 +63,24 @@ unsafe fn with(handle: *mut c_void, body: impl FnOnce(&mut dyn Driver)) {
     if handle.is_null() {
         return;
     }
-    // The deref is the whole of the unsafety; running `body` is ordinary Rust.
+    // Safety: the caller's — a live handle from `handle_for`, which is what
+    // makes this cast right. Running `body` is ordinary Rust.
     let driver = unsafe { (*(handle as *mut Box<dyn Driver>)).as_mut() };
     body(driver);
 }
 
 /// The screen is being shown.
 ///
-/// **Nothing is installed here**, which is the second difference from
-/// CrossPoint: that firmware installs the host from `on_enter` *and* `render`,
-/// because its `loop` and `render` run on two FreeRTOS tasks and either may
-/// wake first. A host with one thread installs once, before the first screen
-/// exists, and a second install would only be a second chance to race.
+/// Nothing is installed here: a host with one thread installs once, before
+/// the first screen exists, and a second install would only be a second
+/// chance to race.
 ///
 /// # Safety
 /// `handle` must be null or a live handle from [`into_handle`] or
 /// [`handle_for`], not yet destroyed or reclaimed.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xpui_screen_on_enter(handle: *mut c_void) {
+    // Safety: the caller's, as documented above.
     unsafe { with(handle, |driver| driver.on_enter()) }
 }
 
@@ -104,6 +91,7 @@ pub unsafe extern "C" fn xpui_screen_on_enter(handle: *mut c_void) {
 /// [`handle_for`], not yet destroyed or reclaimed.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xpui_screen_loop(handle: *mut c_void) {
+    // Safety: the caller's, as documented above.
     unsafe { with(handle, |driver| driver.loop_()) }
 }
 
@@ -114,22 +102,20 @@ pub unsafe extern "C" fn xpui_screen_loop(handle: *mut c_void) {
 /// [`handle_for`], not yet destroyed or reclaimed.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xpui_screen_on_exit(handle: *mut c_void) {
+    // Safety: the caller's, as documented above.
     unsafe { with(handle, |driver| driver.on_exit()) }
 }
 
-/// Paints the screen into whatever `xpui_fui_attach` was given.
-///
-/// **No renderer argument**, which is the first difference from CrossPoint:
-/// its `rust_activity_render` takes one and its own comment says it is unused,
-/// because the renderer is reached through the globals the host binds. A
-/// parameter nothing reads is a parameter that can go out of step with the
-/// header and never be noticed.
+/// Paints the screen into whatever `xpui_fui_attach` was given. No renderer
+/// argument: what paints is the installed host, and a parameter nothing
+/// reads can go out of step with the header unnoticed.
 ///
 /// # Safety
 /// `handle` must be null or a live handle from [`into_handle`] or
 /// [`handle_for`], not yet destroyed or reclaimed.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xpui_screen_render(handle: *mut c_void) {
+    // Safety: the caller's, as documented above.
     unsafe { with(handle, |driver| driver.render()) }
 }
 
@@ -141,6 +127,7 @@ pub unsafe extern "C" fn xpui_screen_render(handle: *mut c_void) {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xpui_screen_home_gesture(handle: *mut c_void) -> u8 {
     let mut claimed = false;
+    // Safety: the caller's, as documented above.
     unsafe { with(handle, |driver| claimed = driver.handle_home_gesture()) }
     u8::from(claimed)
 }
@@ -152,6 +139,7 @@ pub unsafe extern "C" fn xpui_screen_home_gesture(handle: *mut c_void) -> u8 {
 /// that has not been destroyed or reclaimed already.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn xpui_screen_destroy(handle: *mut c_void) {
+    // Safety: the caller's, as documented above.
     drop(unsafe { reclaim(handle) })
 }
 

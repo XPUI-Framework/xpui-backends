@@ -53,7 +53,7 @@ pub(super) fn report(
 /// The painted frame as ASCII, with every character cell holding a changed
 /// pixel replaced by `X`.
 ///
-/// A plain thumbnail cannot show a small change — one pixel in an 8x16 block
+/// A plain thumbnail cannot show a small change — one pixel in a block
 /// averages to nothing — so the marking, not the shading, is what carries the
 /// information here.
 pub(super) fn difference_map(expected: &Framebuffer, actual: &Framebuffer, columns: i32) -> String {
@@ -156,17 +156,12 @@ fn set(frame: &mut Framebuffer, x: i32, y: i32, ink: bool) {
 
 /// The workspace's `target/diff`.
 ///
-/// Derived from the test binary rather than the working directory: cargo runs
-/// an integration test with the working directory at its own crate root, which
-/// in a workspace is not where the shared `target/` is. The binary itself is
-/// always at `<target>/<profile>/deps/<name>-<hash>`.
-///
-/// Counting three levels is safe here in a way it was not in the ABI checker,
-/// which counted its own depth in the repository: this counts cargo's own
-/// layout, which cargo guarantees. And a wrong answer puts a failure artefact
-/// somewhere unexpected rather than reporting a pass — the fallback is a
-/// relative `target/`, not a panic, because a diff nobody can find is a worse
-/// outcome than a test that fails without one.
+/// Derived from the test binary rather than the working directory: cargo
+/// runs an integration test with the working directory at its own crate
+/// root, not where the shared `target/` is, while the binary is always at
+/// `<target>/<profile>/deps/<name>-<hash>`. The fallback is a relative
+/// `target/`, not a panic: a diff nobody can find is worse than a test that
+/// fails without one.
 fn diff_dir() -> PathBuf {
     let target = env::current_exe()
         .ok()

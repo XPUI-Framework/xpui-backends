@@ -36,38 +36,19 @@ impl<D: DrawTarget> Backend<D> {
 
     /// Takes the display **out** of the backend, until the loan is dropped.
     ///
-    /// [`with_display`](Backend::with_display) holds the guard for as long as
-    /// its closure runs, so a flush that suspends cannot go inside one: a
-    /// borrow held across an `await` is a second task arriving to find the
-    /// state already borrowed, which under this workspace's `panic = "abort"`
-    /// takes the firmware down. A DMA-backed panel — the whole point of an
-    /// async driver — is exactly that case.
+    /// A flush that suspends cannot go inside
+    /// [`with_display`](Backend::with_display), which holds the guard for as
+    /// long as its closure runs: a borrow held across an
+    /// `await` is a second task arriving to find the state already borrowed,
+    /// which under `panic = "abort"` takes the firmware down. So the display
+    /// leaves, the caller owns it across the suspension, and the loan puts it
+    /// back on drop. **Anything that paints while it is out is discarded**;
+    /// `screen_size` still answers. `None` when the display is already out.
     ///
-    /// So the display leaves rather than being borrowed. The caller owns it
-    /// across the suspension, nothing is held, and the loan puts it back on
-    /// drop. **Anything that paints while it is out is discarded**, which is
-    /// the price: `Canvas::clear`, every primitive and every glyph become
-    /// no-ops for that window. `screen_size` still answers, because layout
-    /// measured against zero collapses without saying so.
-    ///
-    /// `None` when the display is already on loan. Two presents at once is a
-    /// caller bug, and handing back a second loan would hand out two `&mut D`.
-    ///
-    /// # Two ways to lose the panel
-    ///
-    /// **Do not `mem::forget` a loan.** The display never comes back, and
-    /// nothing says so: every paint is discarded from then on, `screen_size`
-    /// keeps answering the right number so layout looks healthy, and the only
-    /// symptom is a panel that stopped updating. That is the failure this
-    /// repository takes most seriously, and it is safe code — so it is a
-    /// documented hazard rather than something the type system can refuse.
-    ///
-    /// **Do not drop a loan inside a backend callback.** `Drop` puts the
-    /// display back, which takes the guard, so a loan going out of scope
-    /// inside [`input`](Backend::input)'s or `with_display`'s closure
-    /// re-enters it and panics. It is the only type here whose destructor
-    /// calls back into the backend, and it does so with nothing visible at the
-    /// call site.
+    /// **Do not `mem::forget` a loan**: the display never comes back, every
+    /// paint is discarded from then on, and the only symptom is a panel that
+    /// stopped updating. **Do not drop a loan inside a backend callback**:
+    /// `Drop` puts the display back, which takes the guard, and re-enters it.
     pub fn loan_display(&self) -> Option<DisplayLoan<'_, D>> {
         let display = self.frame.with(|frame| frame.display.take())?;
         Some(DisplayLoan {

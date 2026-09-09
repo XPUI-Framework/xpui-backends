@@ -21,5 +21,6 @@ impl<P: Platform + 'static> Backend<P> {
 /// `framebuffer` must be writable for `(width + 7) / 8 * height` bytes and
 /// must outlive every subsequent draw. Call before installing the backend.
 pub unsafe fn attach(framebuffer: *mut u8, width: i32, height: i32) {
+    // Safety: the caller's, as documented above.
     unsafe { raw::xpui_fui_attach(framebuffer, width, height) }
 }

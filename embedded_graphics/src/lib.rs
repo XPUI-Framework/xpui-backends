@@ -107,11 +107,8 @@ pub use palette::Palette;
 pub use u8g2_fonts::{Font, FontRenderer, fonts as u8g2};
 pub use xpui_chrome::{Labels, Metrics};
 
-/// The crate's prose, compiled.
-///
-/// A README that does not build is worse than none: this crate's only usage
-/// example passed the wrong form to its own macro for as long as nothing
-/// tried it.
+/// The crate's prose, compiled: a README that does not build is worse than
+/// none.
 #[cfg(doctest)]
 mod guides {
     #[doc = include_str!("../README.md")]

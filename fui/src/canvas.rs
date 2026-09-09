@@ -24,6 +24,7 @@ impl<P: Platform> Canvas for Backend<P> {
             return;
         }
         let text = as_c(text);
+        // Safety: `text` is NUL-terminated and outlives the call.
         unsafe {
             raw::xpui_fui_draw_text(
                 origin.x,
@@ -84,6 +85,7 @@ impl<P: Platform> Canvas for Backend<P> {
         if data.len() < needed {
             return;
         }
+        // Safety: `data` holds at least `needed` bytes and outlives the call.
         unsafe {
             raw::xpui_fui_draw_image(data.as_ptr(), origin.x, origin.y, size.width, size.height)
         }

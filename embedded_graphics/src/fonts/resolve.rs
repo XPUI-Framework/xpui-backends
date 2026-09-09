@@ -1,29 +1,15 @@
 //! Deciding which face draws which part of a string.
 //!
-//! **Measuring and drawing walk this same function.** That is the whole point
-//! of it being a function: a layout that measured with one face and painted
-//! with another would wrap correctly and overflow anyway, and nothing would
-//! say so. Both call [`pieces`]; neither decides anything on its own.
+//! **Measuring and drawing walk this same function**: a layout that measured
+//! with one face and painted with another would wrap correctly and overflow
+//! anyway. Both call [`pieces`]; neither decides anything on its own.
 //!
-//! # The chain
-//!
-//! The face the role resolved to, then the family's fallback, then a marker
-//! box. A label that silently loses a character reads as the wrong words,
-//! which is worse than a label that visibly has a box in it.
-//!
-//! Falling back **per glyph**, not per string: the fallback here exists for
-//! one missing character in an otherwise ordinary label, and sending the whole
-//! label to another family over a single ellipsis would change the type of a
-//! whole row. A firmware whose fallback is a different *script* wants the
-//! opposite, and would route the string.
-//!
-//! # The ellipsis
-//!
-//! `…` is the one character that actually turns up missing. These faces stop
-//! at U+00FF, so a truncated label ended in nothing at all: zero width when
-//! measured, no ink when drawn, and no sign that a marker was intended. Where
-//! no face in the chain has it, it becomes three full stops — which every face
-//! has, and which is what it means.
+//! The chain is the face the role resolved to, then the family's fallback,
+//! then a marker box — a label that silently loses a character reads as the
+//! wrong words. Fallback is **per glyph**, not per string: sending a whole
+//! label to another family over one ellipsis would change the type of a row.
+//! `…` is the character that turns up missing — these faces stop at U+00FF —
+//! and where no face in the chain has it, it becomes three full stops.
 
 use u8g2_fonts::FontRenderer;
 use u8g2_fonts::types::VerticalPosition;
