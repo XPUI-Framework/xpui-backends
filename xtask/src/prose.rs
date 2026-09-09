@@ -11,28 +11,15 @@ use std::path::{Path, PathBuf};
 use crate::fences::fences;
 use crate::paths::tracked;
 
-/// Every Rust block in the documentation is compiled, and none of it is
-/// exempted from being.
+/// Every Rust block in the documentation is compiled, and none is exempt.
 ///
-/// A guide's snippets rot in silence otherwise: they are prose to every tool
-/// in the build. The mechanism is `#[doc = include_str!(...)]` on a
-/// `#[cfg(doctest)]` item, which makes rustdoc compile the fences as doctests.
+/// A page is compiled when a `#[cfg(doctest)]` item carries
+/// `#[doc = include_str!(...)]` naming it. Four faults, each a way for a fence
+/// to look compiled and not be: a Rust fence nothing mounts; an unlabelled
+/// fence, which rustdoc compiles as Rust; an unknown language, so ` ```rustt `
+/// is an error rather than a shrug; and `ignore`, whose budget is zero.
 ///
-/// Four rules, not one, because each of the other three is a way for a fence
-/// to look compiled and not be:
-///
-/// - a page with a Rust fence that nothing mounts;
-/// - an **unlabelled** fence, which rustdoc compiles as Rust — so leaving it
-///   unlabelled inside a mounted page is a snippet nobody chose to compile,
-///   and outside one it hides from this check entirely;
-/// - an **unknown language**, because ` ```rustt ` is a typo that silently
-///   compiles nothing, and a shrug is what let it in;
-/// - an **`ignore` attribute**, whose budget is zero. `ignore` is how a
-///   snippet stops being checked while still looking like code.
-///
-/// This looks for the **attribute**, not a call — a document merely
-/// *mentioned* in a comment would satisfy a laxer search while compiling
-/// nothing.
+/// The attribute is what is looked for, not a mention of the file.
 pub fn is_compiled(exempt: &[&str], known: &[&str]) -> Result<String, String> {
     let mut included = BTreeSet::new();
     for source in tracked("*.rs") {
@@ -235,8 +222,7 @@ mod tests {
 
     #[test]
     fn an_ignore_is_a_fault_on_a_mounted_page_where_it_hides_best() {
-        // `rust,ignore` on a mounted page: rustdoc parses it and runs nothing,
-        // and the old check counted the page as compiled and said nothing.
+        // `rust,ignore` on a mounted page: rustdoc parses it and runs nothing.
         let why = against("ignore", "```rust,ignore\nlet x = 1;\n```\n", true)
             .expect_err("the budget for these is zero");
         assert!(why.contains("budget"), "{why}");

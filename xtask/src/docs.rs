@@ -1,13 +1,8 @@
-//! Where a document's links point.
+//! Where a document's links point, on disk.
 //!
-//! About **paths on disk**. Whether rustdoc can resolve an intra-doc link is a
-//! different question with a different answer, and it is asked by running
-//! rustdoc — see each `main.rs`. Whether a page's Rust is compiled is a third,
-//! and it is next door in `prose.rs`.
-//!
-//! Its *commands* are next door in `commands.rs`: reading a fence is the same
-//! job for both, but "does this path exist" and "would this command run" are
-//! two, and they were one 500-line file until the size ratchet said so.
+//! Whether rustdoc resolves an intra-doc link is asked by running rustdoc;
+//! whether a page's Rust compiles is `prose.rs`; whether its commands could
+//! run is `commands.rs`.
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -18,24 +13,17 @@ use crate::paths::{exists_exactly, tracked};
 
 /// Every relative link in every document resolves to a path on disk.
 ///
-/// Rust sources too, not only markdown: a `///` comment writes a
-/// markdown-style link like any page, and at least one in this organisation
-/// points at a C header two directories away. Reading only `*.md` left those
-/// unchecked.
-///
-/// Absolute URLs are somebody else's uptime and are not fetched here. Anchors
-/// are split off: `docs/x.md#section` is a claim about `docs/x.md`, and
-/// checking the heading too would need a markdown parser for little gain.
+/// Rust sources too: a `///` comment writes a markdown link like any page.
+/// Absolute URLs are somebody else's uptime and are not fetched. Anchors are
+/// split off — `docs/x.md#section` is a claim about `docs/x.md`.
 pub fn doc_paths() -> Result<String, String> {
     let mut broken = Vec::new();
     let mut checked = 0;
     let mut pages = 0;
     for doc in tracked("*.md").into_iter().chain(tracked("*.rs")) {
         let raw = fs::read_to_string(&doc).unwrap_or_default();
-        // In a Rust file only the doc comments are prose. A `[a](b.md)` inside
-        // a string literal is data — this module's own tests are full of
-        // them — and reading it as a link reports a file nobody claimed
-        // exists.
+        // In a Rust file only the doc comments are prose; a `[a](b.md)` in a
+        // string literal is data.
         let text = if doc.extension().is_some_and(|x| x == "rs") {
             doc_comments(&raw)
         } else {
@@ -48,9 +36,7 @@ pub fn doc_paths() -> Result<String, String> {
             if exists_exactly(&here.join(&target)) {
                 continue;
             }
-            // Nothing on disk. If it could only ever have been an item, it is
-            // rustdoc's to resolve and rustdoc does — see the check beside
-            // this one.
+            // Nothing on disk, and it could only be an item: rustdoc's.
             if !target.contains('/') && names_a_rust_item(&target) {
                 continue;
             }
@@ -84,16 +70,10 @@ fn doc_comments(text: &str) -> String {
 
 /// The relative file paths `[text](target)` names, with their line numbers.
 ///
-/// Deliberately not a markdown parser, but not naive either. It drops what a
-/// path check has no business reading, because each of these produced a false
-/// failure the shell had already learned to avoid:
-///
-/// - links inside a fence, and inside an inline `code span`;
-/// - URLs, anchors and `mailto:`;
-/// - a CommonMark title — `[a](x.md "Title")` — and an angle-bracket
-///   destination, `[a](<a b.md>)`;
-/// - a bare word with no slash and no extension, like `[Screen](Screen)`,
-///   which is rustdoc's to resolve rather than the filesystem's.
+/// Not a markdown parser. It skips links inside a fence or a `code span`,
+/// URLs, anchors and `mailto:`; strips a CommonMark title (`[a](x.md "Title")`)
+/// and angle brackets (`[a](<a b.md>)`); and returns a bare word for the
+/// filesystem to judge.
 fn links(text: &str) -> Vec<(usize, String)> {
     let inside: BTreeSet<usize> = fences(text)
         .iter()
@@ -144,25 +124,16 @@ fn destination(raw: &str) -> Option<String> {
     if path.is_empty() {
         return None;
     }
-    // A bare word — `Screen`, `LICENSE`, `Makefile` — could be either an
-    // intra-doc link or a file, and its spelling does not always say which.
-    // It is returned, and the resolution below decides: a word that names a
-    // file is a file, and only one that names nothing is handed back to
-    // rustdoc. The shell used a list of extensions instead, and the cost was
-    // that `[MIT](LICENSE)` — a real link, in every one of these
-    // repositories — was silently never checked at all.
+    // A bare word — `Screen`, `LICENSE` — could be an item or a file, and its
+    // spelling does not say which. It is returned; the resolution decides.
     Some(path.to_string())
 }
 
-/// Whether a bare word is the name of a Rust item rather than a file.
+/// Whether a bare word names a Rust item rather than a file.
 ///
-/// A path segment `::` says so outright, and a dot says the opposite. What is
-/// left is a single word, where the useful observation is that a file named
-/// without an extension is *shouted* — `LICENSE`, `README`, `CHANGELOG` —
-/// while a Rust path never is: a module is lowercase (`metrics`, and
-/// rustdoc's own `crate`, `self`, `super`) and a type is CamelCase
-/// (`Screen`). So the one shape that is not an item is the one with no
-/// lowercase letter in it.
+/// `::` says item; a dot says file. Otherwise: a file named without an
+/// extension is shouted (`LICENSE`, `README`), and a Rust path never is —
+/// modules are lowercase, types CamelCase. No lowercase letter means a file.
 fn names_a_rust_item(word: &str) -> bool {
     if word.contains("::") {
         return true;
@@ -218,10 +189,7 @@ mod tests {
 
     #[test]
     fn a_bare_word_is_handed_back_for_the_filesystem_to_judge() {
-        // Whether `Screen`, `LICENSE` or `Makefile` is a file is a question
-        // for the filesystem, not for its spelling. `links` returns all three;
-        // the resolution decides, and only a word that names nothing *and*
-        // could only be an item is handed to rustdoc.
+        // `links` returns every bare word; the resolution decides.
         assert_eq!(links("[Screen](Screen)\n")[0].1, "Screen");
         assert_eq!(links("[MIT](LICENSE)\n")[0].1, "LICENSE");
         assert_eq!(links("[x](Makefile)\n")[0].1, "Makefile");

@@ -1,19 +1,15 @@
 //! What is wrong with one documented command, if anything.
 //!
-//! Separate from the walk over documents next door because they are two jobs:
-//! one decides which commands to read, this one decides whether a command
-//! could run. It is also where every fault this check has ever had is pinned
-//! by a test.
+//! `commands.rs` decides which commands to read; this decides whether one
+//! could run.
 
 use std::collections::BTreeSet;
 use std::path::Path;
 
 use crate::paths::exists_exactly;
 
-/// Flags whose value looks like a path and is not one.
-///
-/// Named, rather than "anything after any flag": that blanket rule exempted
-/// every argument of every command, so `ls -l invented/x` reported nothing.
+/// Flags whose value looks like a path and is not one. Named, rather than
+/// "anything after any flag" — that exempts every argument of every command.
 const NOT_A_PATH: [&str; 8] = [
     "--features",
     "-F",
@@ -27,20 +23,16 @@ const NOT_A_PATH: [&str; 8] = [
 
 /// What is wrong with one command, if anything.
 ///
-/// `ours` is false for a command whose verb belongs to another tool: its
-/// paths are still read — `elf2uf2-rs -d examples/rp2040/…` was wrong inside
-/// exactly such a command — but its flags are not, because `-p` means
-/// something else to somebody else's program.
+/// `ours` is false for a verb belonging to another tool: its paths are still
+/// read, its flags are not — `-p` means something else there.
 pub fn fault(parts: &[&str], packages: &BTreeSet<String>, root: &Path, ours: bool) -> Vec<String> {
     let mut out = Vec::new();
     let mut claimed = usize::MAX;
     for (index, word) in parts.iter().enumerate() {
         let next = parts.get(index + 1);
         match *word {
-            // Every `-p` on the line, not just the last: a clippy invocation
-            // names four packages and only one of them used to be read.
-            // Only for a command whose verb this repository owns: `-p` means
-            // something else to somebody else's tool.
+            // Every `-p` on the line, not just the last. Only for a verb this
+            // repository owns: `-p` means something else to another tool.
             "-p" | "--package" if ours => {
                 if let Some(name) = next
                     && !packages.contains(*name)
@@ -64,18 +56,13 @@ pub fn fault(parts: &[&str], packages: &BTreeSet<String>, root: &Path, ours: boo
             }
             _ => {}
         }
-        // A bare relative path argument: `./build-and-test.sh`, `docs/x.md`.
-        // Only the first component is checked, because a command may create
-        // what comes after it — `target/thumbv6m…/release/app` is built, not
-        // committed. `--features xpui/testing` is a feature and not a path,
-        // hence the flag-value guard.
+        // A bare relative path: only its first component is checked, because
+        // a command may create what comes after — `target/…/app` is built,
+        // not committed. `--features xpui/testing` is a feature, not a path.
         let is_flag_value = index > 0 && NOT_A_PATH.contains(&parts[index - 1]);
         let is_claimed = index == claimed;
-        // At index 0 the word is the program, and only an explicit `./` makes
-        // it a path in this repository — `cargo` and `make` are on PATH. That
-        // distinction is the whole check for a one-word command, and
-        // `./build-and-test.sh` is the most documented command in this
-        // organisation.
+        // At index 0 the word is the program; only `./` makes it a path here.
+        // `cargo` and `make` are on PATH.
         let is_path = if index == 0 {
             word.starts_with("./")
         } else {
@@ -171,7 +158,6 @@ mod tests {
 
     #[test]
     fn every_p_on_the_line_is_read_and_not_only_the_last() {
-        // The four-package clippy line: the first name was the broken one.
         let found = fault(
             &["cargo", "clippy", "-p", "nowhere", "-p", "xpui-chrome"],
             &workspace(),
@@ -214,8 +200,7 @@ mod tests {
 
     #[test]
     fn a_command_that_is_only_a_path_is_still_checked() {
-        // `./build-and-test.sh` on its own line: one word, no arguments, and
-        // for a while nothing looked at it at all.
+        // `./build-and-test.sh` on its own line: one word, no arguments.
         let here = Fixture::new("bare-path", &["build-and-test.sh"]);
         assert!(fault(&["./build-and-test.sh"], &workspace(), here.root(), true).is_empty());
         assert_eq!(
@@ -229,8 +214,7 @@ mod tests {
 
     #[test]
     fn an_awk_program_is_not_a_path() {
-        // `rustc -vV | awk '/^host:/{print $2}'` is how two repositories name
-        // the host triple, and the slash in it is not a directory here.
+        // `awk '/^host:/{print $2}'` has a slash in it and is not a directory.
         let here = Fixture::new("awk", &["README.md"]);
         let found = fault(
             &["rustc", "-vV", "|", "awk", "'/^host:/{print", "$2}'"],
@@ -276,8 +260,7 @@ mod tests {
 
     #[test]
     fn a_skipped_verb_still_has_its_paths_read() {
-        // `elf2uf2-rs -d examples/rp2040/target/…` was wrong inside a flash
-        // command. A verb list that silenced the whole line kept it wrong.
+        // A skipped verb's paths are still read.
         let here = Fixture::new("skipped-verb", &["README.md"]);
         let found = fault(
             &["elf2uf2-rs", "-d", "examples/rp2040/app.uf2"],

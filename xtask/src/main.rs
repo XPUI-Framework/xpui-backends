@@ -14,24 +14,25 @@
 //! Each repository in the organisation has its own copy of this shape, holding
 //! its own list. **This file is the part that is meant to differ**; the modules
 //! under it are byte-identical, and `shared_files_agree` in `xpui-dev` hashes
-//! all seven across the nine, so a fix to the fence scanner cannot land in one
+//! all ten across the nine, so a fix to the fence scanner cannot land in one
 //! repository and not the rest.
 //!
 //! A check written and never listed below is a dead function, which clippy
-//! fails the build over. That is what a hand-written "is every check
-//! dispatched?" check used to do, and it does it better.
+//! fails the build over.
 
+mod agents;
 mod cargo;
 mod commands;
+mod comments;
 mod cpp;
 mod docs;
 mod faults;
 mod fences;
 mod paths;
 mod prose;
+mod readme;
+mod shim;
 mod tree;
-
-use std::path::PathBuf;
 
 use std::process::ExitCode;
 
@@ -62,6 +63,37 @@ const NOT_COMPILED: [&str; 0] = [];
 /// Pages that are not a repository's front door and carry no banner.
 const NOT_A_FRONT_PAGE: [&str; 0] = [];
 
+/// The root README's headings, in order. Empty until this repository's front
+/// page is brought to the standard; then the eight.
+const README_ORDER: &[&str] = &[];
+const README_OPTIONAL: &[&str] = &["Which crate you want", "Requirements"];
+const NESTED_ORDER: &[&str] = &[
+    "Using it",
+    "Requirements",
+    "Checking it",
+    "Where next",
+    "License",
+];
+const NESTED_OPTIONAL: &[&str] = &["Requirements", "Where next"];
+
+/// `AGENTS.md` exists and `CLAUDE.md` is a symlink to it.
+const AGENTS_FILE: bool = false;
+
+/// Every publishable crate denies `missing_docs`.
+const DOCUMENTED: bool = false;
+
+/// How long a comment may be. `None` is not adopted.
+const COMMENT_CAPS: Option<comments::Caps> = Some(comments::Caps {
+    doc: 15,
+    header: 15,
+    run: 10,
+});
+/// No comment is about the past.
+const NARRATION_CHECKED: bool = true;
+/// Which files the two comment checks read. `None` is every tracked source,
+/// manifest and C++ file outside `tests/`.
+const COMMENT_SCOPE: Option<&str> = None;
+
 /// Bare-metal targets the two backends are linted for.
 const BARE_METAL: [(&str, bool); 2] = [
     ("riscv32imc-unknown-none-elf", true),
@@ -84,8 +116,7 @@ fn main() -> ExitCode {
         .expect("xtask/..");
     std::env::set_current_dir(root).expect("the repository root");
 
-    // A typo is not a check. The shell this replaced rejected an unknown
-    // argument, and a gate that silently treats `fx` as `check` is a gate that
+    // A typo is not a check: a gate that silently treats `fx` as `check`
     // reports a pass for a run nobody asked for.
     let fix = match std::env::args().nth(1).as_deref() {
         None | Some("check") => false,
@@ -132,11 +163,11 @@ fn main() -> ExitCode {
         ),
         (
             "the header's symbols are all defined",
-            Box::new(symbols_agree),
+            Box::new(shim::symbols_agree),
         ),
         (
             "documented C++ compiles",
-            Box::new(|| cpp::snippets_compile(snippet_includes(), true)),
+            Box::new(|| cpp::snippets_compile(shim::snippet_includes(), true)),
         ),
         ("lint", Box::new(lint)),
         ("tests", Box::new(tests)),
@@ -144,13 +175,49 @@ fn main() -> ExitCode {
             "doctests",
             Box::new(|| cargo::cargo(&["test", "--workspace", TEST_FEATURES, "--doc"])),
         ),
-        ("the shim compiles", Box::new(shim_compiles)),
+        ("the shim compiles", Box::new(shim::shim_compiles)),
+        (
+            "README sections",
+            Box::new(|| {
+                readme::readme_sections(
+                    README_ORDER,
+                    README_OPTIONAL,
+                    NESTED_ORDER,
+                    NESTED_OPTIONAL,
+                    &NOT_A_FRONT_PAGE,
+                )
+            }),
+        ),
+        (
+            "AGENTS.md",
+            Box::new(|| agents::agents_file_exists(AGENTS_FILE)),
+        ),
+        (
+            "published crates deny missing_docs",
+            Box::new(|| tree::published_crates_deny_missing_docs(DOCUMENTED)),
+        ),
+        (
+            "comment blocks",
+            Box::new(|| comments::comment_blocks(COMMENT_CAPS, COMMENT_SCOPE)),
+        ),
+        (
+            "comment narration",
+            Box::new(|| comments::comment_narration(NARRATION_CHECKED, COMMENT_SCOPE)),
+        ),
     ];
 
     // C++ formatting sits beside the Rust formatting, and is the same
     // decision: this shim is the half a firmware author reads, so it is held
     // to the standard of the firmware it plugs into.
     gate.insert(1, ("C++ format", Box::new(move || cpp::format(fix))));
+
+    // Last, after every insert and extend, owning the names: a closure in
+    // the vector cannot borrow the vector.
+    let names: Vec<String> = gate.iter().map(|(n, _)| n.to_string()).collect();
+    gate.push((
+        "the gate is documented",
+        Box::new(move || agents::agents_documents_the_gate(&names)),
+    ));
 
     for (name, check) in gate.drain(..) {
         println!("\n==> {name}");
@@ -223,10 +290,8 @@ fn tests() -> Result<String, String> {
         "--features",
         "critical-section",
     ])?;
-    // `--all-targets` does not include doctests, and that gap let a README
-    // mounted as a doctest reference a `golden`-only function: the crate
-    // stopped compiling its own prose with the feature off, which is the
-    // shape `xpui-simulator` consumes.
+    // `--all-targets` does not include doctests, and the feature-off shape
+    // is what `xpui-simulator` consumes.
     cargo::cargo(&[
         "test",
         "-p",
@@ -236,73 +301,6 @@ fn tests() -> Result<String, String> {
     ])?;
     Ok("workspace, critical-section, screenshot without golden".into())
 }
-
-/// The boundary this repository owns: its own header against its own shim.
-///
-/// `fui/tests/abi.rs` compares *signatures*. This compares *presence*, which
-/// that cannot read, and the two do not overlap. The other two pairs read a
-/// C++ host and a firmware, and moved to `xpui-cpp` with them.
-fn symbols_agree() -> Result<String, String> {
-    let header = cpp::symbols("xpui_fui_", &[PathBuf::from("fui/cpp/xpui_fui.h")])?;
-    if header.is_empty() {
-        return Err("no xpui_fui_ symbols in fui/cpp/xpui_fui.h — nothing was compared".into());
-    }
-    let shim = cpp::symbols("xpui_fui_", &[PathBuf::from("fui/cpp/xpui_fui.cpp")])?;
-    cpp::symbols_agree(
-        "xpui_fui.h and xpui_fui.cpp",
-        "header",
-        &header,
-        "shim",
-        &shim,
-    )
-    .map_err(|why| {
-        format!(
-            "{why}\n\nA symbol in a header with no definition is a link error waiting\n\
-                 for whoever includes it."
-        )
-    })?;
-    Ok(format!("{} symbol(s)", header.len()))
-}
-
-/// Where a documented C++ snippet's headers are, or the reason there are none.
-fn snippet_includes() -> Result<Vec<String>, String> {
-    let sdk = cpp::freeink_include()
-        .ok_or("FreeInkUI headers not found. Set FREEINK_SDK_INCLUDE to run it.")?;
-    Ok(vec![
-        format!("-I{}", sdk.display()),
-        "-Ifui/cpp".to_string(),
-    ])
-}
-
-/// The shim compiles, on its own terms.
-///
-/// `-fno-exceptions -fno-rtti` because it is compiled into a firmware that
-/// builds with both off; a shim that needs either would link there and fail
-/// nowhere else.
-fn shim_compiles() -> Result<String, String> {
-    let Some(sdk) = cpp::freeink_include() else {
-        return Ok("skipped: FreeInkUI headers not found. Set FREEINK_SDK_INCLUDE.".into());
-    };
-    let status = std::process::Command::new("clang++")
-        .args([
-            "-std=c++17",
-            "-fsyntax-only",
-            "-fno-exceptions",
-            "-fno-rtti",
-            "-Wall",
-            "-Wextra",
-        ])
-        .arg(format!("-I{}", sdk.display()))
-        .args(["-Ifui/cpp", "fui/cpp/xpui_fui.cpp"])
-        .status()
-        .map_err(|e| format!("clang++: {e}"))?;
-    if status.success() {
-        Ok("clean".into())
-    } else {
-        Err("fui/cpp/xpui_fui.cpp does not compile".into())
-    }
-}
-
 /// Clippy on each bare-metal target, with warnings as errors.
 ///
 /// The host build never parses code behind `cfg(target_os = "none")` — no

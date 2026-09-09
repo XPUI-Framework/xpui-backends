@@ -1,9 +1,8 @@
 //! Whether every command a document gives could run here.
 //!
 //! Not executed — that would flash boards and install packages. What is
-//! checked is the part that goes stale: a `-p` naming a package that is not
-//! here, and a path that is not in this repository. Nine broken commands were
-//! shipped across the organisation before anything read a ```bash block.
+//! checked is what goes stale: a `-p` naming a package that is not here, and
+//! a path that is not in this repository.
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -13,16 +12,12 @@ use crate::faults::fault;
 use crate::fences::{Fence, commands, fences, words};
 use crate::paths::{exists_exactly, tracked};
 
-/// Verbs whose *semantics* cannot be checked from here: a flasher, a package
-/// manager, another repository's build system.
-///
-/// Only the semantics. Their **paths are still read**, because
-/// `elf2uf2-rs -d examples/rp2040/target/…` was wrong inside exactly such a
-/// command, and a verb list that silenced the whole line would have kept it
-/// wrong. The count is reported so the list cannot quietly grow.
 /// Info strings that mean "this block is shell".
 const SHELL: [&str; 4] = ["bash", "sh", "shell", "console"];
 
+/// Verbs whose semantics cannot be checked from here: a flasher, a package
+/// manager, another repository's build system. Their paths are still read.
+/// The count is reported so the list cannot quietly grow.
 const NOT_OURS: &[&str] = &[
     "pio",
     "platformio",
@@ -48,12 +43,9 @@ const NOT_OURS: &[&str] = &[
 
 /// Every documented command could run here.
 pub fn resolve(packages: &BTreeSet<String>, exempt: &[&str]) -> Result<String, String> {
-    // Every command is resolved from the **repository root**, wherever the
-    // document sits. A markdown link resolves relative to the page that holds
-    // it, and this deliberately does not: a `cargo` command in a nested
-    // README is one you run where the workspace is, and `open
-    // gallery/tests/screenshots/` in `gallery/README.md` means exactly what it
-    // says from the root and nothing sensible from beside itself.
+    // Resolved from the repository root, wherever the document sits — unlike
+    // a markdown link. A `cargo` command in a nested README is one you run
+    // where the workspace is.
     let root = Path::new(".");
     let mut problems = Vec::new();
     let (mut checked, mut skipped, mut left) = (0, 0, 0);
@@ -87,11 +79,8 @@ pub fn resolve(packages: &BTreeSet<String>, exempt: &[&str]) -> Result<String, S
     }
 
     if problems.is_empty() {
-        // Every number, because each is a way of checking nothing. A page
-        // that `cd`s into a sibling checkout and then runs its commands is
-        // documenting that repository correctly — but a whole guide doing it
-        // means this check read nothing at all, and that should be visible
-        // rather than reported as a pass.
+        // Every number, because each is a way of checking nothing: a guide
+        // that `cd`s away entirely means this read nothing at all.
         Ok(format!(
             "{checked} command(s) in {blocks} block(s); {skipped} another tool's, \
              {left} in another repository across {left_blocks} block(s)"
@@ -105,12 +94,9 @@ pub fn resolve(packages: &BTreeSet<String>, exempt: &[&str]) -> Result<String, S
     }
 }
 
-/// Everything wrong in one fenced block, with the line each fault is on, plus
-/// how many commands were read, how many were another tool's, and how many
-/// belonged to a repository this block had stepped into.
-///
-/// Separate from the walk over documents so it can be tested against a scratch
-/// tree rather than against whichever repository carries this copy.
+/// Everything wrong in one fenced block with its line, plus how many commands
+/// were read, were another tool's, and belonged to a repository this block
+/// had stepped into. Testable against a scratch tree.
 fn block_faults_counted(
     fence: &Fence,
     packages: &BTreeSet<String>,
@@ -118,27 +104,18 @@ fn block_faults_counted(
 ) -> (Vec<(usize, String)>, usize, usize, usize) {
     let mut out = Vec::new();
     let (mut checked, mut skipped, mut left) = (0, 0, 0);
-    // A `cd` out of the tree ends *this block*, not the page. One block that
-    // shows an SDK being cloned elsewhere must not disable the checking of
-    // every block after it.
+    // A `cd` out of the tree ends this block, not the page.
     let mut elsewhere = false;
     for command in commands(fence) {
         let parts = words(&command.text);
         let Some(verb) = parts.first() else { continue };
         if *verb == "cd" {
-            // Anywhere that is not a directory of this repository — an
-            // absolute path, a step above the root, or a sibling checkout. A
-            // guide that says `git clone …` and then `cd` into what it cloned
-            // is documenting another repository's commands, correctly, and
-            // they are not ours to resolve.
-            //
-            // Latched, never cleared: once a block has stepped outside, a
-            // later `cd docs` is *that* tree's `docs`, and resolving it here
-            // would check a path against the wrong repository.
-            //
-            // `..` is spelled out because `exists_exactly` resolves a parent
-            // step textually and would answer "yes, that is here" — the trap
-            // its own doc comment names.
+            // Anywhere that is not a directory here — absolute, above the
+            // root, or a sibling checkout — is another repository's commands,
+            // not ours to resolve. Latched: after `cd xpui-gallery`, a later
+            // `cd docs` is *that* tree's `docs`. `..` is spelled out because
+            // `exists_exactly` resolves a parent step textually and answers
+            // "yes, that is here".
             elsewhere |= parts.get(1).is_none_or(|d| {
                 let d = d.trim_end_matches('/');
                 d == ".."
@@ -230,10 +207,8 @@ mod tests {
     }
     #[test]
     fn a_cd_into_a_sibling_checkout_ends_the_block() {
-        // A guide that clones another repository and then runs its commands is
-        // documenting that repository correctly. Those commands are not ours
-        // to resolve, and `cd` into a directory this repository does not have
-        // is how the check knows.
+        // `cd` into a directory this repository does not have is how the check
+        // knows the commands after it are another repository's.
         let here = Fixture::new("cd-away", &["docs/"]);
         // `cd docs` stays inside, so what follows is still checked.
         let inside = fences("```bash\ncd docs\ncargo run -p nowhere\n```\n");

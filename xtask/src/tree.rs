@@ -11,13 +11,9 @@ use crate::paths::{tracked, under_src};
 
 /// No file under a `src/` is doing two jobs.
 ///
-/// A file grows past a few hundred lines when two jobs start sharing a name,
-/// and nothing notices — it still compiles, the tests still pass, and the seam
-/// is visible only to whoever reads it next. The limit is a ratchet, not the
-/// principle; raising it is a decision to argue for in a commit message.
-///
-/// There is deliberately no allow-list. Tests are exempt as a class, because a
-/// list of cases is not a grab-bag, so this looks only under `src/`.
+/// The limit is a ratchet, not the principle; raising it is a decision to
+/// argue for in a commit message. There is no allow-list. Tests are exempt as
+/// a class — a list of cases is not a grab-bag — so only `src/` is read.
 pub fn file_sizes(limit: usize) -> Result<String, String> {
     let mut over = Vec::new();
     let mut counted = 0;
@@ -35,9 +31,7 @@ pub fn file_sizes(limit: usize) -> Result<String, String> {
     }
     if counted == 0 {
         // A filter that matches nothing reads exactly like a tree with no
-        // offenders. It happened: `/src/` never matched `src/lib.rs` in a
-        // crate that sits at the repository root, so nothing was measured at
-        // all and the check reported success every time.
+        // offenders.
         return Err("no source files found — the filter is matching nothing".into());
     }
     if over.is_empty() {
@@ -55,10 +49,9 @@ pub fn file_sizes(limit: usize) -> Result<String, String> {
 
 /// Every README warns that the API moves.
 ///
-/// **Every** one, so that adding a README is a decision about whether it needs
-/// the warning rather than a decision nobody makes. Naming the pages that
-/// carry it would protect nothing: the edit that drops a page from that list
-/// is the edit that drops its banner. So this names the exceptions instead.
+/// Every one, and the list names the exceptions rather than the carriers: the
+/// edit that drops a page from a carrier list is the edit that drops its
+/// banner.
 pub fn readmes_warn(not_a_front_page: &[&str]) -> Result<String, String> {
     let mut missing = Vec::new();
     let mut checked = 0;
@@ -110,12 +103,8 @@ pub fn crates_are_tested(exempt: &[(&str, &str)]) -> Result<String, String> {
         if !text.contains("[package]") {
             continue;
         }
-        // Empty for a crate at the repository root, which is what makes the
-        // prefix below work: `Path::new(".").join("src")` is `./src`, whose
-        // components are [CurDir, "src"], and those never prefix
-        // `src/lib.rs`. That made the unit-test half of this check dead in
-        // every repository whose crate sits at the root, masked only by those
-        // crates happening to have a `tests/` directory too.
+        // Empty for a crate at the repository root: `Path::new(".").join("src")`
+        // is `./src`, whose components never prefix `src/lib.rs`.
         let dir = manifest
             .parent()
             .unwrap_or(Path::new(""))
@@ -181,18 +170,57 @@ pub fn crates_are_tested(exempt: &[(&str, &str)]) -> Result<String, String> {
     }
 }
 
+/// Every crate that publishes denies `missing_docs`.
+///
+/// Where nothing publishes, `true` prints `no publishable crates` — never
+/// `ok` — because a filter that matches nothing reads like a clean tree.
+pub fn published_crates_deny_missing_docs(required: bool) -> Result<String, String> {
+    if !required {
+        return Ok("not adopted".into());
+    }
+    let mut publishable = Vec::new();
+    let mut without = Vec::new();
+    for manifest in tracked("*Cargo.toml") {
+        let text = fs::read_to_string(&manifest).unwrap_or_default();
+        if !text.contains("[package]") || text.contains("publish = false") {
+            continue;
+        }
+        let dir = manifest.parent().unwrap_or(Path::new(""));
+        let root = ["src/lib.rs", "src/main.rs"]
+            .iter()
+            .map(|r| dir.join(r))
+            .find(|p| p.is_file());
+        let Some(root) = root else { continue };
+        publishable.push(root.display().to_string());
+        let denies = fs::read_to_string(&root)
+            .unwrap_or_default()
+            .lines()
+            .any(|l| l.trim() == "#![deny(missing_docs)]");
+        if !denies {
+            without.push(format!("  {}", root.display()));
+        }
+    }
+    if publishable.is_empty() {
+        return Ok("no publishable crates".into());
+    }
+    if without.is_empty() {
+        Ok(format!("{} crate(s) deny missing_docs", publishable.len()))
+    } else {
+        Err(format!(
+            "{}\n\nA crate that publishes documents every public item.",
+            without.join("\n")
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::paths::in_directory;
     use std::path::PathBuf;
 
-    /// A tree shaped like a repository, so these say the same thing wherever
-    /// this file is carried.
-    ///
-    /// It is a real git checkout, because `tracked` asks git what is there —
-    /// which is the point: a check that reads the filesystem directly would
-    /// walk `target/` and somebody else's vendored sources.
+    /// A tree shaped like a repository, and a real git checkout, because
+    /// `tracked` asks git what is there.
     struct Scratch(PathBuf);
 
     impl Scratch {
@@ -273,8 +301,8 @@ mod tests {
 
     #[test]
     fn a_crate_tested_only_by_a_cfg_test_module_counts_as_tested() {
-        // This is the one that was dead: a crate at the repository root has
-        // sources at `src/…`, and the prefix built for it was `./src`.
+        // A crate at the root has sources at `src/…`; the prefix must not be
+        // `./src`.
         let tree = Scratch::new(
             "root-crate",
             &[
@@ -328,5 +356,33 @@ mod tests {
             ],
         );
         assert!(tree.run(|| crates_are_tested(&[])).is_err());
+    }
+
+    #[test]
+    fn a_publishable_crate_without_the_deny_is_named_and_none_at_all_is_said() {
+        let tree = Scratch::new(
+            "deny",
+            &[
+                ("Cargo.toml", "[package]\nname = \"pub\"\n"),
+                ("src/lib.rs", "pub fn f() {}\n"),
+            ],
+        );
+        let why = tree
+            .run(|| published_crates_deny_missing_docs(true))
+            .expect_err("no deny");
+        assert!(why.contains("src/lib.rs"), "{why}");
+        let private = Scratch::new(
+            "private",
+            &[
+                ("Cargo.toml", "[package]\nname = \"x\"\npublish = false\n"),
+                ("src/lib.rs", "pub fn f() {}\n"),
+            ],
+        );
+        assert_eq!(
+            private
+                .run(|| published_crates_deny_missing_docs(true))
+                .expect("nothing to check"),
+            "no publishable crates"
+        );
     }
 }

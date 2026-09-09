@@ -1,9 +1,7 @@
 //! The C++ half of the boundary: formatting it, compiling what the prose
 //! shows, and checking that every symbol a header declares is defined.
 //!
-//! Carried only by the two repositories that hold C++. A repository with none
-//! does not have this file, which is the difference between a gate you can
-//! read and a gate you scroll past.
+//! Carried only by the two repositories that hold C++.
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -147,19 +145,14 @@ pub fn snippets_compile(
     }
     if blocks.is_empty() {
         // In a repository that documents C++, zero blocks means the scanner
-        // broke — not that the prose is clean. The shell guarded this by
-        // counting each page's fences twice with independent code and failing
-        // on a mismatch; this is the same argument with the second count
-        // replaced by the caller's knowledge of its own tree.
+        // broke — not that the prose is clean.
         if expect_some {
             return Err("no C++ fences found, and this repository documents C++.\n\
                         Either the prose lost its examples or the fence scanner\n\
                         stopped recognising them."
                 .into());
         }
-        // A different sentence from `skipped:`, which always means a
-        // prerequisite is missing. If the two print the same line, the one
-        // honest skip in the tree teaches everybody to ignore the word.
+        // Not `skipped:`, which always means a prerequisite is missing.
         return Ok("no C++ in this repository's prose".into());
     }
     let flags = match includes {
@@ -203,17 +196,14 @@ pub fn snippets_compile(
 
 /// Every symbol matching `prefix` in the given files.
 ///
-/// Presence, not signature. Two swapped parameters link fine — C has no
-/// mangling to disagree with, and the result is a corrupt call frame — which
-/// is why a separate check parses signatures. This one catches the other
-/// failure: a symbol declared in a header with nothing defining it, which is a
-/// link error waiting for whoever includes it.
+/// Presence, not signature — a separate check parses signatures. This catches
+/// a symbol declared in a header with nothing defining it: a link error
+/// waiting for whoever includes it.
 pub fn symbols(prefix: &str, files: &[PathBuf]) -> Result<BTreeSet<String>, String> {
     let mut found = BTreeSet::new();
     for file in files {
-        // Not `unwrap_or_default`: a path this cannot read contributes no
-        // symbols, which reads exactly like a file that defines none — and a
-        // list of files is how this check knows what to compare.
+        // Not `unwrap_or_default`: an unreadable path contributes no symbols,
+        // which reads exactly like a file that defines none.
         let text = fs::read_to_string(file).map_err(|e| format!("  {}: {e}", file.display()))?;
         let mut rest = text.as_str();
         while let Some(at) = rest.find(prefix) {

@@ -91,11 +91,10 @@ pub fn under_src(path: &Path) -> bool {
 
 /// Runs `f` with `root` as the working directory.
 ///
-/// The working directory is process-wide and tests in a binary run in
-/// parallel, so **every** test that changes it takes this one lock — one per
-/// module is not a lock at all. The directory to return to is captured once,
-/// before any test has moved, because a saved path can otherwise be a scratch
-/// tree that another test has since deleted.
+/// The working directory is process-wide and tests run in parallel, so every
+/// test that changes it takes this one lock — one per module is no lock. The
+/// directory to return to is captured once, before any test has moved: a
+/// path saved later can be a scratch tree another test deletes.
 #[cfg(test)]
 pub fn in_directory<T>(root: &Path, f: impl FnOnce() -> T) -> T {
     use std::sync::{Mutex, OnceLock};
@@ -116,8 +115,7 @@ mod tests {
 
     #[test]
     fn a_crate_at_the_repository_root_is_under_src_too() {
-        // `/src/` alone matched neither of the first two, so a single-crate
-        // repository measured nothing and passed.
+        // `/src/` alone matches neither of the first two.
         assert!(under_src(Path::new("src/lib.rs")));
         assert!(under_src(Path::new("src/paint/controls.rs")));
         assert!(under_src(Path::new("xtask/src/main.rs")));
@@ -128,8 +126,7 @@ mod tests {
     #[test]
     fn a_source_root_prefix_matches_a_crate_at_the_repository_root() {
         // `Path::new(".").join("src")` is `./src`, whose components are
-        // [CurDir, "src"], and those never prefix `src/lib.rs`. That made the
-        // unit-test half of `crates_are_tested` dead in five repositories.
+        // [CurDir, "src"], and those never prefix `src/lib.rs`.
         assert!(Path::new("src/lib.rs").starts_with(Path::new("").join("src")));
         assert!(Path::new("core/src/lib.rs").starts_with(Path::new("core").join("src")));
         assert!(!Path::new("src/lib.rs").starts_with(Path::new("core").join("src")));

@@ -18,12 +18,9 @@ pub fn cargo(arguments: &[&str]) -> Result<String, String> {
 
 /// Every package in this repository, by name.
 ///
-/// Read out of the manifests rather than `cargo metadata`, for two reasons.
-/// One: metadata's JSON gives every *target* a `"name"` too, so a scan for the
-/// key accepted an integration test's filename as a package and let a wrong
-/// `-p` through. Two: a repository may hold a crate its root workspace
-/// excludes — `docs-test/` is one — and a document naming that crate is
-/// naming something that is genuinely here.
+/// From the manifests rather than `cargo metadata`: metadata gives every
+/// *target* a `"name"` too, and a repository may hold a crate its root
+/// workspace excludes — `docs-test/` — that a document may still name.
 pub fn packages() -> BTreeSet<String> {
     let mut names = BTreeSet::new();
     for manifest in crate::paths::tracked("*Cargo.toml") {
@@ -54,10 +51,8 @@ pub fn packages() -> BTreeSet<String> {
 /// Whether a rustup target is installed.
 ///
 /// A bare-metal lint is the only gate that reaches code behind
-/// `cfg(target_os = "none")` — no allocator, no panic handler. Where the
-/// target is absent the check says so out loud rather than passing quietly,
-/// because a gate that skips silently is a gate that is green on a laptop and
-/// wrong everywhere it matters.
+/// `cfg(target_os = "none")`. Where the target is absent the check says so
+/// rather than passing quietly.
 pub fn target_installed(triple: &str) -> bool {
     Command::new("rustup")
         .args(["target", "list", "--installed"])
@@ -72,12 +67,8 @@ pub fn target_installed(triple: &str) -> bool {
 
 /// Rustdoc over the workspace, with warnings as errors.
 ///
-/// This is the check `doc_paths` is *not*. A path check reads what is on
-/// disk; this asks rustdoc whether every intra-doc link — `[`Screen`]`,
-/// `[`Canvas::draw_text`]` — resolves to an item that exists and is public
-/// enough to link to. Six broken ones shipped here before it existed: two
-/// pointing at items behind a `cfg`, three at private implementation details,
-/// one at a private module.
+/// Not `doc_paths`, which reads disk: this asks rustdoc whether every
+/// intra-doc link resolves to an item public enough to link to.
 pub fn rustdoc(arguments: &[&str]) -> Result<String, String> {
     let mut all = vec!["doc", "--no-deps"];
     all.extend_from_slice(arguments);

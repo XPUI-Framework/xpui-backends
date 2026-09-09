@@ -1,9 +1,5 @@
-//! Reading fenced blocks out of markdown, and what each check that reads them
-//! wants.
-//!
-//! In shell this was three awk state machines that each re-derived where a
-//! fence starts and ends. Here it is one iterator, so a fix to the scanning
-//! reaches every check that scans.
+//! Reading fenced blocks out of markdown, once, for every check that reads
+//! them.
 
 /// One fenced block: its language, its lines, and where it started.
 pub struct Fence<'a> {
@@ -16,16 +12,10 @@ pub struct Fence<'a> {
 
 /// Every fenced block in a document, in order.
 ///
-/// Both fence characters, because a page is free to use either and a scanner
-/// that knows one silently reads a document as having no code in it at all.
-/// A fence indented into a list item still counts — markdown allows up to
-/// three spaces — but four or more is a code block in its own right, and its
-/// contents are not the language they appear to be.
-///
-/// The **run length** matters: a fence closes only on a run at least as long
-/// as the one that opened it, which is how a ````markdown block quotes an
-/// inner ```bash without ending itself. Treating every run as a toggle turned
-/// one such block into two bogus ones and lost the commands inside.
+/// Both fence characters. Indented up to three spaces still counts; four is a
+/// code block whose contents are not the language they look like. A fence
+/// closes only on a run at least as long as the one that opened it — that is
+/// how a ````markdown block quotes an inner ```bash without ending.
 pub fn fences(text: &str) -> Vec<Fence<'_>> {
     let mut out = Vec::new();
     let mut open: Option<(Fence, char, usize)> = None;
@@ -93,12 +83,8 @@ pub struct ShellCommand {
     pub text: String,
 }
 
-/// The runnable lines of a ```bash block.
-///
-/// Continuations are joined first: `cargo clippy \` on one line and `-p xpui`
-/// on the next is one command, and a scanner reading lines saw only the half
-/// with the verb. That was a real gap — the four-line clippy invocation every
-/// repository documents was never checked.
+/// The runnable lines of a ```bash block, with `\` continuations joined: a
+/// scanner reading lines sees only the half with the verb.
 pub fn commands(fence: &Fence) -> Vec<ShellCommand> {
     let mut out: Vec<ShellCommand> = Vec::new();
     let mut pending: Option<ShellCommand> = None;
@@ -163,12 +149,9 @@ fn strip_comment(line: &str) -> &str {
     line
 }
 
-/// The words of a command with the shell's own decoration removed.
-///
-/// `sudo` and `env` prefixes hid a command from the verb check — a skipped
-/// verb list only works if it sees the verb. `VAR=value` prefixes are dropped
-/// for the same reason, and because a value like `FREEINK_SDK_DIR=/opt/sdk` is
-/// an environment variable rather than a path this repository should contain.
+/// The words of a command with the shell's own decoration removed: `sudo`,
+/// `env`, `export` and `VAR=value` prefixes are not the verb, and
+/// `FREEINK_SDK_DIR=/opt/sdk` is not a path this repository holds.
 pub fn words(command: &str) -> Vec<&str> {
     let mut parts = command.split_whitespace().peekable();
     while let Some(head) = parts.peek() {
@@ -316,9 +299,7 @@ mod tests {
 
     #[test]
     fn only_an_uppercase_name_before_the_equals_is_an_assignment() {
-        // The rule is about the *name*, and the previous test of it passed two
-        // commands whose head word had no `=` at all — so the body of the rule
-        // never ran and any mutation of it stayed green.
+        // A head word with no `=` never reaches the rule; these do.
         assert_eq!(words("foo=bar cargo test")[0], "foo=bar");
         assert_eq!(words("Mixed_Case=1 cargo test")[0], "Mixed_Case=1");
         assert_eq!(words("=novalue cargo test")[0], "=novalue");
