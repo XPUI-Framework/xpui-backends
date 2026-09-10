@@ -88,6 +88,8 @@ const _: () = {
 };
 
 impl<D: DrawTarget> Backend<D> {
+    /// A backend over `display`, painting ink and background as `palette`
+    /// says, with the default metrics, English labels and a reader's key row.
     pub fn new(display: D, palette: Palette<D::Color>) -> Self {
         let bounds = display.bounding_box();
         Backend {
@@ -244,18 +246,22 @@ impl<D: DrawTarget> Backend<D> {
         self.frame.with(|frame| feed(&mut frame.input));
     }
 
+    /// Reports `button` as pressed this frame.
     pub fn press(&self, button: Button) {
         self.input(|state| state.press(button));
     }
 
+    /// Reports `button` as released this frame.
     pub fn release(&self, button: Button) {
         self.input(|state| state.release(button));
     }
 
+    /// Reports a completed tap at `at`.
     pub fn tap(&self, at: Point) {
         self.input(|state| state.tap(at));
     }
 
+    /// Reports a completed swipe.
     pub fn swipe(&self, direction: SwipeDir) {
         self.input(|state| state.swipe(direction));
     }
@@ -276,6 +282,7 @@ impl<D: DrawTarget> Backend<D> {
         self.dirty.load(Ordering::Relaxed)
     }
 
+    /// Marks the pending repaint as pushed; call after presenting the frame.
     pub fn clear_dirty(&self) {
         self.dirty.store(false, Ordering::Relaxed);
     }

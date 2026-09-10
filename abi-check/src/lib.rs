@@ -47,6 +47,8 @@
 //! Add to the mapping or the scanner when a boundary needs a shape it does not
 //! have; do not work around one.
 
+#![deny(missing_docs)]
+
 mod c;
 mod rust;
 mod signature;

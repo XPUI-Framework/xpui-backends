@@ -33,12 +33,10 @@ xpui_screenshot::assert_screenshot("settings", &framebuffer);
 `check_screenshot` is the same comparison as a `Result`, for a test capturing
 many frames that wants to report all the failures rather than the first.
 
-## The first run fails on purpose
-
-A golden that does not exist yet is **written, and then the test fails**. That
-is deliberate: it means nobody can commit a picture they have never looked at.
-Accept an intended change with `UPDATE_SNAPSHOTS=1`, then open the file and
-read it before staging.
+**The first run fails on purpose.** A golden that does not exist yet is
+written, and then the test fails: nobody can commit a picture they have never
+looked at. Accept an intended change with `UPDATE_SNAPSHOTS=1`, then open the
+file and read it before staging.
 
 ```bash
 UPDATE_SNAPSHOTS=1 cargo test
@@ -46,24 +44,24 @@ UPDATE_SNAPSHOTS=1 cargo test
 
 A mismatch writes `expected`, `actual` and `differences` side by side into
 `target/diff/`, so a failure on CI can be looked at rather than guessed at —
-the workflows in the repositories that hold goldens — this one,
-`xpui-gallery`, `xpui-simulator`, `xpui-cpp` and the framework — upload that
-directory on failure.
-
-## What depends on it
-
-[`xpui-embedded-graphics`](../embedded_graphics/) for its seven images,
-[`xpui-gallery`](https://github.com/XPUI-Framework/xpui-gallery) for the
-seventy that cover ten captures on seven panels, and three more for
-typefaces, and
+the workflows in the repositories that hold goldens upload that directory on
+failure. [`xpui-embedded-graphics`](../embedded_graphics/) uses it for its
+seven images, [`xpui-gallery`](https://github.com/XPUI-Framework/xpui-gallery)
+for its seventy board captures, and
 [`xpui-simulator`](https://github.com/XPUI-Framework/xpui-simulator) for the
-framebuffer alone, without `golden`.
+framebuffer alone.
 
 Its own comparator is tested against itself: ten cases in `src/golden/`, one of
 which is a committed image whose only job is to prove the comparison still
 returns `Err` when it should. Replace its last two lines with `Ok(())` and the
 whole organisation's pixel suite passes while comparing nothing — which is the
 one failure this technique cannot survive, so it is checked here.
+
+## Checking it
+
+The gate is the repository's; run `./build-and-test.sh` from the root. It
+lints and doctests this crate a second time without `golden`, the shape the
+simulator consumes.
 
 ## License
 

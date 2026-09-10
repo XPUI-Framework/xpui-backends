@@ -10,6 +10,7 @@ pub struct Backend<P: Platform + 'static> {
 }
 
 impl<P: Platform + 'static> Backend<P> {
+    /// A backend forwarding input and the clock to `platform`.
     pub const fn new(platform: &'static P) -> Self {
         Backend { platform }
     }

@@ -37,12 +37,15 @@ pub struct Tier {
     /// these against the faces themselves, so a wrong number is a failing test
     /// rather than a layout that is quietly a pixel out.
     pub line_height: i32,
+    /// The upright face.
     pub regular: &'static FontRenderer,
+    /// The bold face.
     pub bold: &'static FontRenderer,
     /// `None` when the family was never cut in it — u8g2's Helvetica was not.
     /// Asking for italic then gets the regular face, which is the honest
     /// answer: a slanted approximation is a different typeface.
     pub italic: Option<&'static FontRenderer>,
+    /// `None` when the family was never cut in it; bold is drawn instead.
     pub bold_italic: Option<&'static FontRenderer>,
 }
 

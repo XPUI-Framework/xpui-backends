@@ -8,38 +8,16 @@ An [`xpui`](https://github.com/XPUI-Framework/xpui-framework) backend that draws
 FreeInkUI is a header-only C++ component library for e-ink firmware. It already
 knows what a list row, a dialog and a slider look like — so a screen written
 against `xpui` and one written in C++ against FreeInkUI come out as the same
-pixels. That is the whole reason to sit on it rather than beside it.
+pixels. That is the whole reason to sit on it rather than beside it. Two
+halves: `src/` is the Rust `Host` implementation over a C ABI, and `cpp/` is
+that ABI implemented against FreeInkUI.
 
-## Two halves
+## Using it
 
-| | |
-|---|---|
-| `src/` | the Rust `Host` implementation, over a C ABI |
-| `cpp/` | that ABI implemented against FreeInkUI |
-
-`cpp/xpui_fui.h` is the contract. `src/raw.rs` declares exactly those symbols
-and `cpp/xpui_fui.cpp` defines them. All three move together, and a mismatch is
-a link error at best and a corrupt call frame at worst.
-
-`tests/abi.rs` parses this header and every Rust file that declares or defines
-its symbols, and compares **signatures** — not just names. Two parameters
-swapped still link, because C has no mangling to disagree with, and the symptom
-is a rendering fault somewhere unrelated; that is the failure it exists for.
-`symbols_agree` in `xtask/src/main.rs` covers the half it cannot read:
-this header against the C++ that defines it.
-
-The boundary runs both ways: `cpp/xpui_screen.h` declares six lifecycle entry
-points that `src/lifecycle.rs` **defines**, so a C++ host can drive a Rust
-screen through an opaque handle. `examples/cpp_host` is a worked example of
-both directions.
-
-The C++ half binds to `freeink::ui::DisplayTarget`, which is dependency-free
-and takes a plain 1-bit framebuffer. It is deliberately *not* written against
-any particular firmware's renderer, so any project linking the FreeInk SDK can
-add these two files and be done. A firmware with its own themed renderer can
-implement the same ABI itself instead — that is a supported path, not a fork.
-
-## Wiring it up
+```toml
+[dependencies]
+xpui-fui = { git = "https://github.com/XPUI-Framework/xpui-backends", branch = "main" }
+```
 
 ```rust,no_run
 # use xpui::Button;
@@ -62,75 +40,32 @@ unsafe { xpui::host::install(&BACKEND) };
 ```
 
 Add `cpp/xpui_fui.cpp` to the firmware's build with FreeInkUI's include
-directory on the path. See [`cpp/README.md`](cpp/README.md).
+directory on the path — [`docs/firmware.md`](docs/firmware.md) has the two
+lines for PlatformIO and for CMake. `Platform` is the one thing this crate
+cannot supply: whatever drives the panel already knows whether a button was
+pressed, so it implements those five methods and the backend forwards to it.
 
-## Input is yours
+## Requirements
 
-`Platform` is the one thing this crate cannot supply. A drawing library cannot
-tell you whether a button was pressed; whatever drives the panel already knows.
+The C++ half needs the FreeInkUI headers, `<freeink-sdk>/libs/ui/FreeInkUI/include`,
+and a C++17 compiler. The Rust half needs nothing; its tests run against
+doubles, with no firmware to link.
 
-```rust
-# use xpui::Button;
-# use xpui_fui::Platform;
-# struct MyPlatform;
-# struct Buttons;
-# impl Buttons {
-#     fn pressed(&self, _button: Button) -> bool { false }
-#     fn held(&self, _button: Button) -> bool { false }
-#     fn released(&self, _button: Button) -> bool { false }
-# }
-# fn my_input() -> Buttons { Buttons }
-# fn my_clock() -> u32 { 0 }
-impl Platform for MyPlatform {
-    fn millis(&self) -> u32 { my_clock() }
-    fn was_pressed(&self, button: Button) -> bool { my_input().pressed(button) }
-    fn is_pressed(&self, button: Button) -> bool { my_input().held(button) }
-    fn was_released(&self, button: Button) -> bool { my_input().released(button) }
-    // Does this device carry Left and Right? Read it off the board rather
-    // than inferring it from the shape of the device — `xteink::X3` does and
-    // `xteink::X4_PRO` does not, and both are readers.
-    fn has_left_right_keys(&self) -> bool { true }
-}
-```
+## Checking it
 
-Those five are the whole obligation: touch and the gestures default to "nothing
-happened", so a button-only device implements no more than this. `NoInput`
-implements exactly those five and nothing else, for a panel that only displays.
+The gate is the repository's; run `./build-and-test.sh` from the root. The
+shim's compile stage needs `FREEINK_SDK_INCLUDE` set and skips with a note
+otherwise.
 
-`has_left_right_keys` is the only one of the five that asks about the device
-rather than about this frame, and the only method below `was_released` without a
-default, because there is no answer that is safe to inherit.
-[`src/platform.rs`](src/platform.rs) says why, and points at the board crates for
-the answer each board gives.
+## Where next
 
-## The distinctions that break things quietly
+| | |
+|---|---|
+| [`docs/design.md`](docs/design.md) | why this backend has the shape it does, the boundary's four places, input, and the distinctions that break things quietly |
+| [`docs/coverage.md`](docs/coverage.md) | which FreeInkUI components the shim uses, which it draws itself, and which it leaves alone |
+| [`docs/firmware.md`](docs/firmware.md) | adding the shim to a firmware: sources, includes, wiring, what the build does not ship |
+| [`cpp/`](cpp/) | the C++ half, and its own README |
 
-Everything crossing the boundary is a pointer, and two pairs of meanings look
-identical from C:
+## License
 
-**Null is not an empty string, for a button hint.** A null label means "host,
-use your own word for this slot". An empty one means "the screen asked for this
-slot to be blank". Confusing them either blanks every standard hint or labels
-one the screen wanted hidden.
-
-**Null is not an empty string, for a row cell.** Null means the row has no such
-field — which is how the theme tells a one-line row from a two-line one. One
-row answering `Some("")` instead of `None` makes *every* row in that list tall.
-
-Both are pinned by tests in `tests/marshalling.rs`.
-
-## Testing
-
-```bash
-cargo test -p xpui-fui
-```
-
-The `testing` feature swaps the C entry points for doubles that record what
-crossed, so the Rust half is testable with no firmware to link against. It
-tests **marshalling**, which is where the quiet bugs are. The C++ half is
-checked by compiling it.
-
-The doubles answer every `ThemeMetric` with a **distinct** value on purpose:
-the tags are positional and not in declaration order (`ListRowGap` is 14,
-sitting after the slider values), so two metrics sharing a number would let a
-swapped tag pass unnoticed.
+MIT — see [LICENSE](../LICENSE).

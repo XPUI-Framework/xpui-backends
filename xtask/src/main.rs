@@ -63,9 +63,16 @@ const NOT_COMPILED: [&str; 0] = [];
 /// Pages that are not a repository's front door and carry no banner.
 const NOT_A_FRONT_PAGE: [&str; 0] = [];
 
-/// The root README's headings, in order. Empty until this repository's front
-/// page is brought to the standard; then the eight.
-const README_ORDER: &[&str] = &[];
+/// The root README's headings, in order.
+const README_ORDER: &[&str] = &[
+    "Which crate you want",
+    "Using it",
+    "Requirements",
+    "Checking it",
+    "Where next",
+    "Where it sits",
+    "License",
+];
 const README_OPTIONAL: &[&str] = &["Which crate you want", "Requirements"];
 const NESTED_ORDER: &[&str] = &[
     "Using it",
@@ -77,10 +84,10 @@ const NESTED_ORDER: &[&str] = &[
 const NESTED_OPTIONAL: &[&str] = &["Requirements", "Where next"];
 
 /// `AGENTS.md` exists and `CLAUDE.md` is a symlink to it.
-const AGENTS_FILE: bool = false;
+const AGENTS_FILE: bool = true;
 
 /// Every publishable crate denies `missing_docs`.
-const DOCUMENTED: bool = false;
+const DOCUMENTED: bool = true;
 
 /// How long a comment may be. `None` is not adopted.
 const COMMENT_CAPS: Option<comments::Caps> = Some(comments::Caps {

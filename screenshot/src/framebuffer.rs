@@ -36,7 +36,9 @@ use embedded_graphics::primitives::Rectangle;
 /// Not `MockDisplay`: that one is 64x64 and rejects overdraw, and a dither or
 /// a scrim deliberately paints over what is already there.
 pub struct Framebuffer {
+    /// Pixels across.
     pub width: i32,
+    /// Pixels down.
     pub height: i32,
     /// True where ink was laid down.
     ///
@@ -50,6 +52,7 @@ pub struct Framebuffer {
 }
 
 impl Framebuffer {
+    /// A blank frame of `width` by `height`, no ink anywhere.
     pub fn new(width: i32, height: i32) -> Self {
         Framebuffer {
             width,
@@ -74,6 +77,7 @@ impl Framebuffer {
         &self.pixels
     }
 
+    /// Whether `x`, `y` holds ink; anything off the frame is background.
     pub fn get(&self, x: i32, y: i32) -> bool {
         if x < 0 || y < 0 || x >= self.width || y >= self.height {
             return false;
@@ -81,6 +85,7 @@ impl Framebuffer {
         self.pixels[(y * self.width + x) as usize]
     }
 
+    /// How many pixels hold ink.
     pub fn ink_count(&self) -> usize {
         self.pixels.iter().filter(|set| **set).count()
     }

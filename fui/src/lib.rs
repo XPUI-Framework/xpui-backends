@@ -54,6 +54,7 @@
 //! [`Platform`].
 
 #![cfg_attr(target_os = "none", no_std)]
+#![deny(missing_docs)]
 
 extern crate alloc;
 
@@ -90,13 +91,15 @@ const _: raw::CellFn = cell_trampoline;
 #[doc(hidden)]
 pub type Context = *mut c_void;
 
-/// The crate's prose, compiled: a README that does not build is worse than
+/// The crate's prose, compiled: a page that does not build is worse than
 /// none. The tutorial for integrating this backend into a C++ application
 /// is in `xpui-cpp`, with the host whose header its snippets include.
 #[cfg(doctest)]
 mod guides {
     #[doc = include_str!("../README.md")]
     pub mod readme {}
+    #[doc = include_str!("../docs/design.md")]
+    pub mod design {}
 }
 
 /// The source of [`register_screen!`], for an ABI checker to parse.

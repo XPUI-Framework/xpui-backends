@@ -6,7 +6,7 @@ What this backend can prove about pixels, on a laptop, with no panel.
 
 ```toml
 [dev-dependencies]
-xpui-screenshot = "0.1"
+xpui-screenshot = { git = "https://github.com/XPUI-Framework/xpui-backends", branch = "main", features = ["golden"] }
 ```
 
 A separate crate, because it is `std`, it writes files, and this one builds for

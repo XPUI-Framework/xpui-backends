@@ -68,6 +68,7 @@
 //! same screens run on a colour TFT looking monochrome. What it does not do is
 //! let a screen ask for a third colour, because the framework has no way to.
 
+#![deny(missing_docs)]
 #![no_std]
 
 extern crate alloc;
@@ -107,7 +108,7 @@ pub use palette::Palette;
 pub use u8g2_fonts::{Font, FontRenderer, fonts as u8g2};
 pub use xpui_chrome::{Labels, Metrics};
 
-/// The crate's prose, compiled: a README that does not build is worse than
+/// The crate's prose, compiled: a page that does not build is worse than
 /// none.
 #[cfg(doctest)]
 mod guides {
@@ -115,4 +116,8 @@ mod guides {
     pub mod readme {}
     #[doc = include_str!("../docs/screenshots.md")]
     pub mod screenshots {}
+    #[doc = include_str!("../docs/design.md")]
+    pub mod design {}
+    #[doc = include_str!("../docs/hardware.md")]
+    pub mod hardware {}
 }

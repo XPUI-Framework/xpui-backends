@@ -6,11 +6,14 @@ use embedded_graphics::pixelcolor::BinaryColor;
 /// panel silently; the crate root says which is which.
 #[derive(Copy, Clone, Debug)]
 pub struct Palette<C> {
+    /// What ink paints as.
     pub ink: C,
+    /// What background paints as.
     pub background: C,
 }
 
 impl<C> Palette<C> {
+    /// A palette painting ink as `ink` and background as `background`.
     pub fn new(ink: C, background: C) -> Self {
         Palette { ink, background }
     }

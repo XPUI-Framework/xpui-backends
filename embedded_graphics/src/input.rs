@@ -5,9 +5,11 @@
 //! desktop window, a GPIO poll, an interrupt handler. This is the buffer
 //! between them and [`InputSource`](xpui::host::InputSource).
 //!
-//! Everything here is *edge* state: true for exactly one frame, cleared by
-//! [`InputState::begin_frame`]. That matches what the framework expects — a
-//! button reported as pressed on every frame re-fires whatever it is on.
+//! Most of what is here is *edge* state: true for exactly one frame, cleared
+//! by [`InputState::begin_frame`]. That matches what the framework expects —
+//! a button reported as pressed on every frame re-fires whatever it is on.
+//! What `begin_frame` leaves alone is the held set, the finger's position
+//! until it lifts, and `swipe_moves_selection`, which is a setting.
 
 use xpui::{Button, Point, SwipeDir};
 
@@ -28,6 +30,11 @@ fn index(button: Button) -> usize {
     (button as usize).min(BUTTONS - 1)
 }
 
+/// One frame of input, as the event source writes it and the framework reads
+/// it.
+///
+/// Every event here is an edge, cleared by `begin_frame`; what survives it is
+/// the held set, `touch_at` until `touch_up`, and `swipe_moves_selection`.
 #[derive(Default)]
 pub struct InputState {
     pressed: [bool; BUTTONS],
@@ -85,14 +92,17 @@ impl InputState {
         self.touch_released = true;
     }
 
+    /// A completed swipe in `direction`.
     pub fn swipe(&mut self, direction: SwipeDir) {
         self.swipe = direction;
     }
 
+    /// The system back gesture, this frame.
     pub fn back_gesture(&mut self) {
         self.back_gesture = true;
     }
 
+    /// The system home gesture, this frame.
     pub fn home_gesture(&mut self) {
         self.home_gesture = true;
     }

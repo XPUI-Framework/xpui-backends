@@ -7,6 +7,14 @@ on:
   push:
     branches: [main]
   pull_request:
+  # By hand, so a rotated token, a new SDK revision or a changed runner can be
+  # checked without a fake commit.
+  workflow_dispatch:
+
+# Read the checkout and nothing else: nothing here pushes, the sibling fetch
+# below carries its own token, and the screenshot upload uses the runner's.
+permissions:
+  contents: read
 
 # A second push does not pay for the first.
 concurrency:

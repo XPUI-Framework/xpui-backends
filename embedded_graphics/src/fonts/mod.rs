@@ -31,6 +31,7 @@ use xpui_chrome::Metrics;
 /// [`Backend::set_family`]: crate::Backend::set_family
 #[derive(Copy, Clone)]
 pub struct Fonts {
+    /// The family every role resolves through.
     pub family: &'static Family,
     /// The line height interface text wants.
     pub ui: i32,
@@ -177,8 +178,11 @@ impl Fonts {
 /// it.
 #[derive(Copy, Clone)]
 pub struct Face {
+    /// The family it came from, for the fallback chain.
     pub family: &'static Family,
+    /// The size it was cut in.
     pub tier: &'static Tier,
+    /// Weight and slant.
     pub style: FontStyle,
 }
 

@@ -8,128 +8,30 @@ UI library. It binds to `freeink::ui::DisplayTarget`, which needs nothing but a
 raw 1-bit framebuffer and ships its own Noto Sans bitmap font, so this file is
 firmware-agnostic: any board that can hand over a framebuffer can host xpui.
 
-The header is the contract. It, `src/raw.rs` and this file move together.
+## Using it
 
-## Adding it to a firmware
+The header is the contract. It, `../src/raw.rs`, this file and the Rust
+doubles move together. A firmware compiles two sources — `xpui_fui.cpp` and
+FreeInkUI's own `src/FreeInkUI.cpp` — with `<freeink-sdk>/libs/ui/FreeInkUI/include`
+and this directory on the include path, C++17 or later. Two calls at startup
+wire it up: `xpui_fui_attach` with the panel's framebuffer, and
+`xpui_fui_set_present` with the function that pushes a frame.
+[`../docs/firmware.md`](../docs/firmware.md) has the build lines, the wiring,
+and what this build does not ship.
 
-You compile two sources and add one include path:
+## Checking it
+
+The gate is the repository's; run `./build-and-test.sh` from the root. Its
+`the shim compiles` stage compiles this file against the SDK named by
+`FREEINK_SDK_INCLUDE`, and skips with a note when that is unset.
+
+## Where next
 
 | | |
-| --- | --- |
-| sources | `xpui_fui.cpp`, plus FreeInkUI's own `src/FreeInkUI.cpp` |
-| includes | `<freeink-sdk>/libs/ui/FreeInkUI/include`, and this directory |
-| standard | C++17 or later; `-fno-exceptions` and `-fno-rtti` are fine |
+|---|---|
+| [`../docs/firmware.md`](../docs/firmware.md) | adding it to a firmware, wiring it up, what the build does not ship, checking it compiles by hand |
+| [`../docs/coverage.md`](../docs/coverage.md) | which FreeInkUI components this file uses, and which it does not |
 
-FreeInkUI is otherwise header-only, but `src/FreeInkUI.cpp` holds the default
-styles, the theme tokens and the list/layout helpers this file calls, so it has
-to be in the link.
+## License
 
-PlatformIO, with the SDK already in `lib_deps`:
-
-```ini
-build_flags =
-  -I crates/backend/fui/cpp
-  -I freeink-sdk/libs/ui/FreeInkUI/include
-build_src_filter =
-  +<*>
-  +<../crates/backend/fui/cpp/xpui_fui.cpp>
-```
-
-CMake:
-
-```cmake
-target_sources(firmware PRIVATE
-  crates/backend/fui/cpp/xpui_fui.cpp
-  freeink-sdk/libs/ui/FreeInkUI/src/FreeInkUI.cpp)
-target_include_directories(firmware PRIVATE
-  crates/backend/fui/cpp
-  freeink-sdk/libs/ui/FreeInkUI/include)
-```
-
-## Wiring it up
-
-Two calls at startup, one symbol to define.
-
-```cpp
-#include <stdint.h>
-
-#include "xpui_fui.h"
-
-// 1 bit per pixel, MSB first, (width + 7) / 8 bytes per row, a SET bit is
-// WHITE. Must stay valid for as long as anything draws — a static, or
-// whatever your panel driver already owns.
-static uint8_t framebuffer[(480 + 7) / 8 * 800];
-
-void wire_up_the_panel(void) { xpui_fui_attach(framebuffer, 480, 800); }
-```
-
-Coordinates are logical: the framebuffer you hand over is already in the frame
-the UI lays out in, so rotate on the way to the glass, not on the way in.
-
-`xpui_fui_request_update` pushes the frame through whichever of two mechanisms
-you chose. **Prefer the hook**: whether a strong definition beats a weak one
-depends on the object format, and the failure is silent — a panel that never
-updates.
-
-```cpp
-#include "xpui_fui.h"
-
-namespace {
-
-// Raised here, acted on after the frame. **Do not blit in this function**:
-// `xpui_fui_request_update` is called from inside the input phase, before
-// anything has been painted, so a present here pushes the previous frame.
-bool g_updateRequested = false;
-
-void present() { g_updateRequested = true; }
-
-}  // namespace
-
-void install_the_present_hook(void) { xpui_fui_set_present(&present); }
-```
-
-Then, once the frame has been rendered, push it:
-
-```text
-freeink::ui::present(display, freeink::ui::RefreshHint::Fast);
-```
-
-Fenced `text` rather than `cpp` because it cannot be compiled here: the SDK
-guards its panel helpers behind `__has_include(<EInkDisplay.h>)`, which is
-absent on a host, and `present` takes an `EInkDisplay&` rather than the
-`DisplayTarget` this shim draws through. It compiles in a firmware and nowhere
-else.
-
-Overriding the weak `xpui_fui_present` still works, and `examples/cpp_host`
-proves it does on this linker — but the hook behaves the same everywhere.
-
-## What this build does not ship
-
-- **Icons.** `xpui_fui_icon_size` returns 0 for every role, which the ABI
-  defines as "reserve no space". The Icons library is a separate opt-in
-  (`FreeInkUIIcon.h`); wiring it up means resolving a role to a `BitmapRef` in
-  `xpui_fui_draw_icon`.
-- **A second face.** Every `DisplayTarget` slot defaults to the bundled font, so
-  bold and italic render as regular and the reading face is the UI face. Call
-  `setFont(slot, yourFont)` on the target to change that — slots 0, 1 and 3 are
-  small interface, interface, and reading.
-- **Button reordering.** `xpui_fui_draw_button_hints` draws its four slots in
-  the order the ABI names them. A firmware that lets the user remap its front
-  buttons reorders the four arguments before calling.
-
-## Checking it compiles
-
-```sh
-FUI=<freeink-sdk>/libs/ui/FreeInkUI
-
-clang++ -std=c++17 -fsyntax-only -fno-exceptions -fno-rtti -Wall -Wextra \
-  -I "$FUI/include" -I . xpui_fui.cpp
-```
-
-Clean, no warnings, on Apple clang 21. To also link and run something, add a
-`main` that attaches a `malloc`'d buffer and build all three sources:
-
-```sh
-clang++ -std=c++17 -fno-exceptions -fno-rtti -I "$FUI/include" -I . \
-  your_main.cpp xpui_fui.cpp "$FUI/src/FreeInkUI.cpp" -o smoke
-```
+MIT — see [LICENSE](../../LICENSE).

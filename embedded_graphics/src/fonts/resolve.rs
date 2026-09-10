@@ -30,11 +30,18 @@ pub enum Piece<'a> {
     /// `text` is usually a slice of the string being measured, but not always:
     /// an ellipsis nothing can draw arrives here as `"..."`.
     Run {
+        /// The face that has every glyph in `text`.
         face: &'static FontRenderer,
+        /// The characters this face draws.
         text: &'a str,
     },
     /// Nothing in the chain has this character. Draw a box this size.
-    Marker { width: i32, height: i32 },
+    Marker {
+        /// The box's width.
+        width: i32,
+        /// The box's height.
+        height: i32,
+    },
 }
 
 /// A missing character's box: narrow, and short enough to sit on the baseline.

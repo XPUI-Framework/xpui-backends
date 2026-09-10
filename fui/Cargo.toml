@@ -10,8 +10,8 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 # The C++ half ships with the crate: `cpp/**` is the shim, and a package
-# without it is a backend a C++ host cannot link. `docs/**` ships the design
-# notes and the coverage table beside the crate they describe.
+# without it is a backend a C++ host cannot link. `docs/**` ships every page
+# beside the crate it describes.
 include = ["src/**", "cpp/**", "docs/**", "README.md"]
 
 [lints]

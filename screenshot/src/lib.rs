@@ -14,6 +14,8 @@
 //! Deliberately, so nobody commits a picture they never looked at. Re-bless
 //! with `UPDATE_SNAPSHOTS=1` and then actually open them.
 
+#![deny(missing_docs)]
+
 /// This crate's prose, compiled. Gated on `golden` as well as `doctest`: the
 /// snippet calls `assert_screenshot`, which the feature gates, and the crate
 /// must keep compiling its own doctests with the feature off — the shape

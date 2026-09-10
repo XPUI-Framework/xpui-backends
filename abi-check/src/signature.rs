@@ -5,7 +5,9 @@ use std::collections::BTreeMap;
 /// One function, in a spelling both languages can be reduced to.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Signature {
+    /// The return type, in the reduced spelling; `void` is `()`.
     pub returns: String,
+    /// The parameter types in order, in the reduced spelling.
     pub params: Vec<String>,
 }
 
@@ -15,6 +17,7 @@ impl std::fmt::Display for Signature {
     }
 }
 
+/// Every function one side declares, by name.
 pub type Signatures = BTreeMap<String, Signature>;
 
 /// What one caller's boundary looks like.

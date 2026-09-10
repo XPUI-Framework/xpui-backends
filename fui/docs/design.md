@@ -104,3 +104,98 @@ where it goes.
 even `xpui_fui_attach`. A theme swapped at run time would be ignored until the
 next boot. The framework side is the easy half: the view tree is rebuilt every
 frame, so a `request_update()` is all `xpui` needs to show the new one.
+
+## The boundary: four places that move together
+
+`cpp/xpui_fui.h` is the contract. `src/raw.rs` declares exactly those symbols,
+`cpp/xpui_fui.cpp` defines them and `src/testing/stubs.rs` doubles them. All
+four move together, and a mismatch is a link error at best and a corrupt call
+frame at worst.
+
+`tests/abi.rs` parses the header and every Rust file that declares or defines
+its symbols, and compares **signatures** — not just names. Two parameters
+swapped still link, because C has no mangling to disagree with, and the
+symptom is a rendering fault somewhere unrelated; that is the failure it
+exists for. `symbols_agree` in `xtask/` covers the half it cannot read: the
+header against the C++ that defines it.
+
+The boundary runs both ways: `cpp/xpui_screen.h` declares six lifecycle entry
+points that `src/lifecycle.rs` **defines**, so a C++ host can drive a Rust
+screen through an opaque handle. `xpui-cpp` is a worked example of both
+directions.
+
+The C++ half binds to `freeink::ui::DisplayTarget`, which is dependency-free
+and takes a plain 1-bit framebuffer. It is deliberately *not* written against
+any particular firmware's renderer, so any project linking the FreeInk SDK can
+add these two files and be done. A firmware with its own themed renderer can
+implement the same ABI itself instead — that is a supported path, not a fork.
+
+## Input is the firmware's
+
+`Platform` is the one thing this crate cannot supply. A drawing library cannot
+tell you whether a button was pressed; whatever drives the panel already knows.
+
+```rust
+# use xpui::Button;
+# use xpui_fui::Platform;
+# struct MyPlatform;
+# struct Buttons;
+# impl Buttons {
+#     fn pressed(&self, _button: Button) -> bool { false }
+#     fn held(&self, _button: Button) -> bool { false }
+#     fn released(&self, _button: Button) -> bool { false }
+# }
+# fn my_input() -> Buttons { Buttons }
+# fn my_clock() -> u32 { 0 }
+impl Platform for MyPlatform {
+    fn millis(&self) -> u32 { my_clock() }
+    fn was_pressed(&self, button: Button) -> bool { my_input().pressed(button) }
+    fn is_pressed(&self, button: Button) -> bool { my_input().held(button) }
+    fn was_released(&self, button: Button) -> bool { my_input().released(button) }
+    // Does this device carry Left and Right? Read it off the board rather
+    // than inferring it from the shape of the device — `xteink::X3` does and
+    // `xteink::X4_PRO` does not, and both are readers.
+    fn has_left_right_keys(&self) -> bool { true }
+}
+```
+
+Those five are the whole obligation: touch and the gestures default to "nothing
+happened", so a button-only device implements no more than this. `NoInput`
+implements exactly those five and nothing else, for a panel that only displays.
+
+`has_left_right_keys` is the only one of the five that asks about the device
+rather than about this frame, and the only method below `was_released` without a
+default, because there is no answer that is safe to inherit. `src/platform.rs`
+says why, and points at the board crates for the answer each board gives.
+
+## The distinctions that break things quietly
+
+Everything crossing the boundary is a pointer, and two pairs of meanings look
+identical from C:
+
+**Null is not an empty string, for a button hint.** A null label means "host,
+use your own word for this slot". An empty one means "the screen asked for this
+slot to be blank". Confusing them either blanks every standard hint or labels
+one the screen wanted hidden.
+
+**Null is not an empty string, for a row cell.** Null means the row has no such
+field — which is how the theme tells a one-line row from a two-line one. One
+row answering `Some("")` instead of `None` makes *every* row in that list tall.
+
+Both are pinned by tests in `tests/marshalling.rs`.
+
+## Testing marshalling
+
+```bash
+cargo test -p xpui-fui
+```
+
+The `testing` feature swaps the C entry points for doubles that record what
+crossed, so the Rust half is testable with no firmware to link against. It
+tests **marshalling**, which is where the quiet bugs are. The C++ half is
+checked by compiling it.
+
+The doubles answer every `ThemeMetric` with a **distinct** value on purpose:
+the tags are positional and not in declaration order (`ListRowGap` is 14,
+sitting after the slider values), so two metrics sharing a number would let a
+swapped tag pass unnoticed.

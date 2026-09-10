@@ -8,10 +8,14 @@ use xpui::{Button, Point, SwipeDir};
 /// driving the panel already knows — a firmware's input manager, a GPIO poll —
 /// so it implements this and the backend forwards to it.
 pub trait Platform: Sync {
+    /// Milliseconds since some fixed point; only differences are read.
     fn millis(&self) -> u32;
 
+    /// Whether `button` went down this frame.
     fn was_pressed(&self, button: Button) -> bool;
+    /// Whether `button` is down, this frame included.
     fn is_pressed(&self, button: Button) -> bool;
+    /// Whether `button` came up this frame.
     fn was_released(&self, button: Button) -> bool;
 
     /// See [`InputSource::has_left_right_keys`](xpui::host::InputSource::has_left_right_keys).
@@ -30,21 +34,27 @@ pub trait Platform: Sync {
     fn has_touch(&self) -> bool {
         false
     }
+    /// A completed tap, at the position the finger went down.
     fn tap(&self) -> Option<Point> {
         None
     }
+    /// Where the finger is while it is down.
     fn touch_held(&self) -> Option<Point> {
         None
     }
+    /// Whether a finger lifted this frame.
     fn touch_released(&self) -> bool {
         false
     }
+    /// A completed swipe, or [`SwipeDir::None`].
     fn swipe(&self) -> SwipeDir {
         SwipeDir::None
     }
+    /// The system back gesture.
     fn was_back_gesture(&self) -> bool {
         false
     }
+    /// The system home gesture, offered to the screen before the host acts.
     fn was_home_gesture(&self) -> bool {
         false
     }
