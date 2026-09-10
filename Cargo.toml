@@ -32,6 +32,11 @@ xpui-abi-check = { path = "abi-check" }
 # `features = ["golden"]` and says so at its own call site.
 xpui-screenshot = { path = "screenshot", default-features = false }
 
+# Three lints the compiler does not deny on its own, denied in every workspace
+# root so that the table is one passage. `too_long_first_doc_paragraph` is the
+# one to watch: it is a nursery lint, off by default, so clippy may rename or
+# retire it — and a name clippy no longer knows is an `unknown_lints` warning,
+# which `-D warnings` turns into a red gate in every repository at once.
 [workspace.lints.clippy]
 undocumented_unsafe_blocks = "deny"
 too_long_first_doc_paragraph = "deny"
