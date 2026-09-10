@@ -1,7 +1,6 @@
-# `xpui-fui`
+[![CI](https://github.com/XPUI-Framework/xpui-backends/actions/workflows/ci.yml/badge.svg)](https://github.com/XPUI-Framework/xpui-backends/actions/workflows/ci.yml) [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../LICENSE)
 
-> ⚠️ **Under heavy development.** Not production-ready. The API can break
-> without notice. Use at your own risk.
+# `xpui-fui`
 
 An [`xpui`](https://github.com/XPUI-Framework/xpui-framework) backend that draws through **FreeInkUI**.
 

@@ -60,7 +60,7 @@ const KNOWN_LANGUAGES: [&str; 19] = [
 /// Documents whose ```rust is illustrative rather than compilable.
 const NOT_COMPILED: [&str; 0] = [];
 
-/// Pages that are not a repository's front door and carry no banner.
+/// Pages that are not a repository's front door.
 const NOT_A_FRONT_PAGE: [&str; 0] = [];
 
 /// The root README's headings, in order.
@@ -151,10 +151,7 @@ fn main() -> ExitCode {
             "crates are tested",
             Box::new(|| tree::crates_are_tested(&UNTESTED)),
         ),
-        (
-            "READMEs warn",
-            Box::new(|| tree::readmes_warn(&NOT_A_FRONT_PAGE)),
-        ),
+        ("READMEs warn", Box::new(tree::readmes_warn)),
         (
             "prose is compiled",
             Box::new(|| prose::is_compiled(&NOT_COMPILED, &KNOWN_LANGUAGES)),

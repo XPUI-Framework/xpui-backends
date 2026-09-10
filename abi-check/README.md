@@ -1,7 +1,6 @@
-# `xpui-abi-check`
+[![CI](https://github.com/XPUI-Framework/xpui-backends/actions/workflows/ci.yml/badge.svg)](https://github.com/XPUI-Framework/xpui-backends/actions/workflows/ci.yml) [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../LICENSE)
 
-> ⚠️ **Under heavy development.** Not production-ready. The API can break
-> without notice. Use at your own risk.
+# `xpui-abi-check`
 
 Parses a C header and the Rust that declares it, and reports where the two
 disagree about a **signature**.

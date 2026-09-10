@@ -1,7 +1,6 @@
-# `xpui-embedded-graphics`
+[![CI](https://github.com/XPUI-Framework/xpui-backends/actions/workflows/ci.yml/badge.svg)](https://github.com/XPUI-Framework/xpui-backends/actions/workflows/ci.yml) [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../LICENSE)
 
-> ⚠️ **Under heavy development.** Not production-ready. The API can break
-> without notice. Use at your own risk.
+# `xpui-embedded-graphics`
 
 An [`xpui`](https://github.com/XPUI-Framework/xpui-framework) backend that draws through any `embedded-graphics`
 `DrawTarget` — which is most of the embedded Rust display ecosystem: e-paper

@@ -1,9 +1,10 @@
+[![CI](https://github.com/XPUI-Framework/xpui-backends/actions/workflows/ci.yml/badge.svg)](https://github.com/XPUI-Framework/xpui-backends/actions/workflows/ci.yml) [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 # `xpui-backends`
 
-> ⚠️ **Under heavy development.** Not production-ready. The API can break
-> without notice. Use at your own risk.
-
-[![CI](https://github.com/XPUI-Framework/xpui-backends/actions/workflows/ci.yml/badge.svg)](https://github.com/XPUI-Framework/xpui-backends/actions/workflows/ci.yml) [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+> [!WARNING]
+> Under heavy development. Not production-ready. The API can break without
+> notice. Use at your own risk.
 
 The two things that put `xpui` pixels on a panel, and the two helpers they
 need. A backend answers five traits — `Canvas`, `TextMetrics`, `Chrome`,

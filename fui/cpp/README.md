@@ -1,7 +1,6 @@
-# xpui on FreeInkUI
+[![CI](https://github.com/XPUI-Framework/xpui-backends/actions/workflows/ci.yml/badge.svg)](https://github.com/XPUI-Framework/xpui-backends/actions/workflows/ci.yml) [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
 
-> ⚠️ **Under heavy development.** Not production-ready. The API can break
-> without notice. Use at your own risk.
+# xpui on FreeInkUI
 
 `xpui_fui.cpp` implements the C ABI in `xpui_fui.h` against the FreeInk SDK's
 UI library. It binds to `freeink::ui::DisplayTarget`, which needs nothing but a

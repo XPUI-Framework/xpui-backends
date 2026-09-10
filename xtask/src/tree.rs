@@ -47,38 +47,37 @@ pub fn file_sizes(limit: usize) -> Result<String, String> {
     }
 }
 
-/// Every README warns that the API moves.
+/// The front page warns that the API moves.
 ///
-/// Every one, and the list names the exceptions rather than the carriers: the
-/// edit that drops a page from a carrier list is the edit that drops its
-/// banner.
-pub fn readmes_warn(not_a_front_page: &[&str]) -> Result<String, String> {
+/// The root README only. A crate README below it is arrived at from the front
+/// page rather than found cold, and the same warning on every one of them is
+/// noise a reader learns to skip past.
+pub fn readmes_warn() -> Result<String, String> {
     let mut missing = Vec::new();
     let mut checked = 0;
-    let mut used = Vec::new();
     for file in tracked("*README.md") {
-        let path = file.to_string_lossy().to_string();
-        if let Some(name) = not_a_front_page.iter().find(|e| **e == path) {
-            used.push(*name);
+        if file.parent().is_some_and(|p| !p.as_os_str().is_empty()) {
             continue;
         }
         checked += 1;
+        let path = file.to_string_lossy().to_string();
         let text = fs::read_to_string(&file).unwrap_or_default();
-        // Lines 3 and 4, read as one: the sentence wraps, and where it wraps
-        // is a formatting decision rather than something to assert.
-        let banner: String = text.lines().skip(2).take(2).collect::<Vec<_>>().join(" ");
-        if !(banner.contains("Under heavy development") && banner.contains("API can break")) {
-            missing.push(format!("  {path}: no development banner on lines 3-4"));
+        // The header block, read as one. The badge line, the title and the
+        // warning all sit in it, and both where the sentence wraps and which
+        // line each lands on are formatting decisions rather than something to
+        // assert.
+        let head: String = text.lines().take(8).collect::<Vec<_>>().join(" ");
+        if !(head.contains("[!WARNING]")
+            && head.contains("Under heavy development")
+            && head.contains("API can break"))
+        {
+            missing.push(format!("  {path}: no development warning in the header"));
         }
     }
-    // An exemption naming a file that has moved is an exemption nobody will
-    // notice has stopped applying.
-    for name in not_a_front_page {
-        if !used.contains(name) {
-            missing.push(format!(
-                "  the exemption names {name}, which is not a README here"
-            ));
-        }
+    // A repository with no front page at all is the one failure this would
+    // otherwise report as success.
+    if checked == 0 {
+        return Err("  no README.md at the root".into());
     }
     if missing.is_empty() {
         Ok(format!("{checked} README(s)"))
@@ -279,24 +278,24 @@ mod tests {
     }
 
     #[test]
-    fn a_readme_without_the_banner_is_named() {
-        let good = "# x\n\n> **Under heavy development.** Not production-ready. The\n> API can break without notice.\n";
+    fn a_front_page_without_the_warning_is_named() {
+        let good = "[![CI](x)](y)\n\n# x\n\n> [!WARNING]\n> Under heavy development. Not production-ready. The\n> API can break without notice.\n";
+        // A crate README below the root is not asked for it.
         let tree = Scratch::new(
             "readmes",
-            &[("README.md", good), ("docs/README.md", "# no banner\n")],
+            &[("README.md", good), ("core/README.md", "# a crate\n")],
         );
+        assert!(tree.run(readmes_warn).is_ok());
+        // The front page is.
+        let tree = Scratch::new("readmes", &[("README.md", "# x\n")]);
         let why = tree
-            .run(|| readmes_warn(&[]))
-            .expect_err("one has no banner");
-        assert!(why.contains("docs/README.md"), "{why}");
-        assert!(!why.contains("\n  README.md"), "{why}");
-        // ...and naming it as an exception is accepted.
-        assert!(tree.run(|| readmes_warn(&["docs/README.md"])).is_ok());
-        // ...but an exception for a file that is not there is a failure.
-        let why = tree
-            .run(|| readmes_warn(&["docs/README.md", "gone/README.md"]))
-            .expect_err("a stale exemption");
-        assert!(why.contains("gone/README.md"), "{why}");
+            .run(readmes_warn)
+            .expect_err("the front page has no warning");
+        assert!(why.contains("README.md"), "{why}");
+        // The alert marker alone is not the warning.
+        let half = "[![CI](x)](y)\n\n# x\n\n> [!WARNING]\n> Something else entirely.\n";
+        let tree = Scratch::new("readmes", &[("README.md", half)]);
+        assert!(tree.run(readmes_warn).is_err());
     }
 
     #[test]
