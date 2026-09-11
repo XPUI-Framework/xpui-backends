@@ -62,25 +62,27 @@ pub fn readmes_warn() -> Result<String, String> {
         checked += 1;
         let path = file.to_string_lossy().to_string();
         let text = fs::read_to_string(&file).unwrap_or_default();
-        // The header block, read as one. The badge line, the title and the
-        // warning all sit in it, and both where the sentence wraps and which
-        // line each lands on are formatting decisions rather than something to
-        // assert.
-        let head: String = text.lines().take(8).collect::<Vec<_>>().join(" ");
-        if !(head.contains("[!WARNING]")
-            && head.contains("Under heavy development")
-            && head.contains("API can break"))
-        {
+        // The callout itself, not the lines around it: read the header instead
+        // and the box a reader sees can say anything, passing on words found
+        // elsewhere. The block is joined because where it wraps is formatting.
+        let warning: String = text
+            .lines()
+            .skip_while(|line| line.trim() != "> [!WARNING]")
+            .skip(1)
+            .take_while(|line| line.starts_with('>'))
+            .collect::<Vec<_>>()
+            .join(" ");
+        if !(warning.contains("Under heavy development") && warning.contains("API can break")) {
             missing.push(format!("  {path}: no development warning in the header"));
         }
     }
-    // A repository with no front page at all is the one failure this would
-    // otherwise report as success.
+    // No front page at all is the one failure this would otherwise report as
+    // success. It reads what git tracks, so ignored is the same as absent.
     if checked == 0 {
-        return Err("  no README.md at the root".into());
+        return Err("  no front page found — the filter is matching nothing".into());
     }
     if missing.is_empty() {
-        Ok(format!("{checked} README(s)"))
+        Ok("the front page warns".into())
     } else {
         Err(missing.join("\n"))
     }
@@ -286,16 +288,27 @@ mod tests {
             &[("README.md", good), ("core/README.md", "# a crate\n")],
         );
         assert!(tree.run(readmes_warn).is_ok());
-        // The front page is.
+        // The front page is, and the message names the page rather than the
+        // filter — those are not the same failure.
         let tree = Scratch::new("readmes", &[("README.md", "# x\n")]);
-        let why = tree
-            .run(readmes_warn)
-            .expect_err("the front page has no warning");
-        assert!(why.contains("README.md"), "{why}");
-        // The alert marker alone is not the warning.
-        let half = "[![CI](x)](y)\n\n# x\n\n> [!WARNING]\n> Something else entirely.\n";
-        let tree = Scratch::new("readmes", &[("README.md", half)]);
-        assert!(tree.run(readmes_warn).is_err());
+        let why = tree.run(readmes_warn).expect_err("no warning");
+        assert!(why.contains("README.md: no development warning"), "{why}");
+        // Both halves of the sentence are required, and so is the callout
+        // carrying them — the last has the phrases beside the box, not in it.
+        for bad in [
+            "> [!WARNING]\n> Under heavy development.\n",
+            "> [!WARNING]\n> The API can break.\n",
+            "> Under heavy development. The API can break.\n",
+            "> [!WARNING]\n> Do not use.\n\nUnder heavy development. The API can break.\n",
+        ] {
+            let text = format!("# x\n\n{bad}");
+            let tree = Scratch::new("readmes", &[("README.md", text.as_str())]);
+            assert!(tree.run(readmes_warn).is_err(), "{bad}");
+        }
+        // Counting a nested README as the front page is how "none" passes.
+        let tree = Scratch::new("nested", &[("docs/README.md", "# nested\n")]);
+        let why = tree.run(readmes_warn).expect_err("there is no front page");
+        assert!(why.contains("matching nothing"), "{why}");
     }
 
     #[test]
