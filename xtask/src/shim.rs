@@ -49,7 +49,7 @@ pub fn snippet_includes() -> Result<Vec<String>, String> {
 /// nowhere else.
 pub fn shim_compiles() -> Result<String, String> {
     let Some(sdk) = cpp::freeink_include() else {
-        return Ok("skipped: FreeInkUI headers not found. Set FREEINK_SDK_INCLUDE.".into());
+        return cpp::skipped("FreeInkUI headers not found. Set FREEINK_SDK_INCLUDE.");
     };
     let status = std::process::Command::new("clang++")
         .args([

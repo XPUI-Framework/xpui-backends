@@ -58,15 +58,10 @@
 //!
 //! # Monochrome by design, not by limitation
 //!
-//! `xpui` paints in ink and background:
-//! [`Canvas::fill_rect`](xpui::host::Canvas::fill_rect) takes a `bool`, and
-//! `scrim` and `fill_rect_dither` only mean anything on a panel with one bit
-//! per pixel. That is deliberate — it is a framework for e-ink.
-//!
-//! This backend is still generic over `PixelColor`. It takes a [`Palette`] of
-//! two colours at construction and maps ink and background onto them, so the
-//! same screens run on a colour TFT looking monochrome. What it does not do is
-//! let a screen ask for a third colour, because the framework has no way to.
+//! `xpui` paints in ink and background, and this backend maps the two onto a
+//! [`Palette`] of any `PixelColor`, so a colour TFT runs the same screens
+//! looking monochrome. Why a screen cannot ask for a third colour is in
+//! [`docs/design.md`](https://github.com/XPUI-Framework/xpui-backends/blob/main/embedded_graphics/docs/design.md#monochrome-by-design-not-by-limitation).
 
 #![deny(missing_docs)]
 #![no_std]

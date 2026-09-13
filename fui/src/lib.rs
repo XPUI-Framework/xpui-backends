@@ -48,17 +48,15 @@
 //! unsafe { xpui::host::install(&BACKEND) };
 //! ```
 //!
-//! Add `cpp/xpui_fui.cpp` to the firmware's build and put FreeInkUI's include
-//! directory on its path. Input and the clock are **not** here: they are
-//! platform concerns, and a firmware supplies them by implementing
-//! [`Platform`].
+//! A firmware compiles `cpp/xpui_fui.cpp` and FreeInkUI's own
+//! `src/FreeInkUI.cpp`, with FreeInkUI's include directory on the path. Input
+//! and the clock are **not** here: they are platform concerns, and a firmware
+//! supplies them by implementing [`Platform`].
 
 #![cfg_attr(target_os = "none", no_std)]
 #![deny(missing_docs)]
 
 extern crate alloc;
-
-use core::ffi::c_void;
 
 mod backend;
 mod canvas;
@@ -86,10 +84,6 @@ const _: fn() = || {
 
 /// Keeps the trampoline's signature honest against the ABI.
 const _: raw::CellFn = cell_trampoline;
-
-/// Unused, but it keeps `c_void` imported where the ABI needs it.
-#[doc(hidden)]
-pub type Context = *mut c_void;
 
 /// The crate's prose, compiled: a page that does not build is worse than
 /// none. The tutorial for integrating this backend into a C++ application

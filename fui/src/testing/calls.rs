@@ -85,7 +85,7 @@ pub enum Call {
     },
     /// An icon drawn.
     Icon {
-        /// The icon's role, as the host numbers them.
+        /// The icon's role, as the caller numbers it; the host picks the asset.
         role: u16,
         /// The edge length asked for.
         size: i32,

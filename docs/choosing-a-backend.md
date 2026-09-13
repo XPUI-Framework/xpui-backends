@@ -23,7 +23,9 @@ its own screens through FreeInkUI has a component library that knows what a
 list row, a dialog and a slider look like. The backend calls that library over
 a C ABI, so a Rust screen and a native one come out as the same pixels, in the
 user's theme, with no second drawing path. The firmware supplies input and the
-clock through one trait, `Platform`, and adds one C++ file to its build.
+clock through one trait, `Platform`, and compiles two C++ sources: the shim
+and FreeInkUI's own `src/FreeInkUI.cpp`, as
+[`fui/docs/firmware.md`](../fui/docs/firmware.md) sets out.
 
 A firmware with its own themed renderer can implement the same ABI itself
 rather than binding to FreeInkUI; that is a supported path, not a fork.

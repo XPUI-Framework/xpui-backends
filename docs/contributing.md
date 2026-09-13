@@ -12,7 +12,8 @@ and tests with nothing else; the C++ half has two requirements:
   differently formatted file, so it refuses those rather than trusting them.
   `.clang-format` is the firmware's own and is not edited here.
 - **The FreeInkUI headers, which are optional.** `the shim compiles` and
-  `documented C++ compiles` skip with a note when there are none. The gate
+  `documented C++ compiles` skip with a note when there are none, and fail
+  instead when `CI` is set. The gate
   takes `FREEINK_SDK_INCLUDE` if it is set; otherwise it looks in
   `../../Freeink/freeink-sdk/` and `../crosspoint-reader/freeink-sdk/`, so on
   a machine that has one of those the stages run against **that** checkout
@@ -34,9 +35,9 @@ and C++ both.
 
 Three things bite here more than anywhere else:
 
-- **A C symbol lives in four places** — `fui/cpp/xpui_fui.h`, `fui/src/raw.rs`,
-  `fui/cpp/xpui_fui.cpp` and `fui/src/testing/stubs.rs` — and all four move
-  together. `fui/tests/abi.rs` and the gate's `symbols_agree` catch a miss.
+- **A C symbol lives in four places** that move together;
+  [`fui/docs/design.md`](../fui/docs/design.md#the-boundary-four-places-that-move-together)
+  names them and what catches a miss.
 - **Every FFI call carries a `// Safety:` line** naming the invariant, and
   `clippy::undocumented_unsafe_blocks` is denied.
 - **The goldens.** `embedded_graphics/tests/` compares frames against

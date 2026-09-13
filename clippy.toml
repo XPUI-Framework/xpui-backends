@@ -21,17 +21,16 @@ msrv = "1.95"
 # most of a UI framework — so it is turned off, and a lint that would change a
 # public signature gets acted on.
 #
-# The monorepo's reason for this was "no downstream users outside this
-# repository", and the split falsified it: `xpui` has nine consumers by git URL
-# now, and a breaking change costs a `cargo update` in five of them. The reason
-# that survives is the banner on every README — the API moves deliberately and
-# breaks without notice, so a warning about breaking it is a warning about the
-# thing we are doing on purpose.
+# `xpui` has nine consumers by git URL, and a breaking change costs a `cargo
+# update` in five of them. It is off anyway because of the banner on every
+# README: the API moves deliberately and breaks without notice, so a warning
+# about breaking it is a warning about the thing being done on purpose.
 avoid-breaking-exported-api = false
 
-# The firmware has 380 KB of RAM and no allocator worth stressing. A large
-# value passed or returned by move is a memcpy the compiler may not elide, so
-# flag types that outgrow a couple of pointers-worth of stack.
+# The smallest firmware here has 264 KiB of RAM, the RP2040's, and no
+# allocator worth stressing. A large value passed or returned by move is a
+# memcpy the compiler may not elide, so flag types that outgrow a couple of
+# pointers-worth of stack.
 pass-by-value-size-limit = 16
 
 # Widget builders are deliberately fluent (`Stepper::new(v).on_change(..)`),

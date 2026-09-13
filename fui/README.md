@@ -38,9 +38,10 @@ static BACKEND: Backend<MyPlatform> = Backend::new(&PLATFORM);
 unsafe { xpui::host::install(&BACKEND) };
 ```
 
-Add `cpp/xpui_fui.cpp` to the firmware's build with FreeInkUI's include
-directory on the path — [`docs/firmware.md`](docs/firmware.md) has the two
-lines for PlatformIO and for CMake. `Platform` is the one thing this crate
+A firmware compiles two sources, `cpp/xpui_fui.cpp` and FreeInkUI's own
+`src/FreeInkUI.cpp`, with FreeInkUI's include directory on the path —
+[`docs/firmware.md`](docs/firmware.md) has the lines for PlatformIO and for
+CMake. `Platform` is the one thing this crate
 cannot supply: whatever drives the panel already knows whether a button was
 pressed, so it implements those five methods and the backend forwards to it.
 
@@ -53,8 +54,10 @@ doubles, with no firmware to link.
 ## Checking it
 
 The gate is the repository's; run `./build-and-test.sh` from the root. The
-shim's compile stage needs `FREEINK_SDK_INCLUDE` set and skips with a note
-otherwise.
+shim's compile stage takes the FreeInkUI headers from `FREEINK_SDK_INCLUDE`,
+or else from an unpinned sibling checkout, and skips with a note only when it
+finds neither — never on CI, where that is a failure; [`docs/contributing.md`](../docs/contributing.md) says where
+it looks.
 
 ## Where next
 

@@ -61,7 +61,7 @@ const KNOWN_LANGUAGES: [&str; 19] = [
 const NOT_COMPILED: [&str; 0] = [];
 
 /// Pages that are not a repository's front door.
-const NOT_A_FRONT_PAGE: [&str; 0] = [];
+const NOT_A_FRONT_PAGE: [&str; 1] = ["docs/README.md"];
 
 /// The root README's headings, in order.
 const README_ORDER: &[&str] = &[
@@ -69,7 +69,6 @@ const README_ORDER: &[&str] = &[
     "Using it",
     "Requirements",
     "Checking it",
-    "Where next",
     "Where it sits",
     "License",
 ];

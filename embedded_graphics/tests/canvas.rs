@@ -232,9 +232,9 @@ fn text_width_counts_characters_not_bytes() {
     );
 }
 
-/// Accented Latin renders as itself. The mono faces this backend used to carry
-/// covered 7-bit ASCII and drew a replacement glyph for everything else, so a
-/// Portuguese label came out peppered with `?`.
+/// Accented Latin renders as itself. A face that covers only 7-bit ASCII
+/// draws a replacement glyph for everything else, so a Portuguese label comes
+/// out peppered with `?`.
 ///
 /// Both halves matter: that the accent is *drawn*, and that it is drawn where
 /// it was measured. A backend whose fallback glyph was a different width would

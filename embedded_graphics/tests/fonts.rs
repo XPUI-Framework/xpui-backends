@@ -54,8 +54,8 @@ fn ui_height(metrics: &Metrics) -> i32 {
 }
 
 /// Every family this backend ships. A caller may register its own, and the
-/// same rules apply to those — `examples/gallery` asserts them for the two it
-/// adds.
+/// same rules apply to those — `xpui-gallery`'s `gallery/` asserts them for
+/// the two it adds.
 const FAMILIES: [&xpui_eg::Family; 1] = [&xpui_eg::HELVETICA];
 
 const PRESETS: [(&str, Fonts); 4] = [

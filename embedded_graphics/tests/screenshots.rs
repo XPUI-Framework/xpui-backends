@@ -12,7 +12,7 @@
 //!
 //! ```bash
 //! UPDATE_SNAPSHOTS=1 cargo test -p xpui-embedded-graphics
-//! open crates/backend/embedded_graphics/tests/screenshots/
+//! open embedded_graphics/tests/screenshots/
 //! ```
 
 use std::sync::{Mutex, MutexGuard};

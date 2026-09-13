@@ -22,7 +22,9 @@ and what this build does not ship.
 
 The gate is the repository's; run `./build-and-test.sh` from the root. Its
 `the shim compiles` stage compiles this file against the SDK named by
-`FREEINK_SDK_INCLUDE`, and skips with a note when that is unset.
+`FREEINK_SDK_INCLUDE`, or else against an unpinned sibling checkout, and
+skips with a note only when it finds neither, and fails on CI instead;
+[`docs/contributing.md`](../../docs/contributing.md) says where it looks.
 
 ## Where next
 

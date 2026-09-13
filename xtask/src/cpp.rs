@@ -103,11 +103,29 @@ pub fn format(fix: bool) -> Result<String, String> {
     }
 }
 
+/// A stage that cannot run for want of something this machine lacks.
+///
+/// On a laptop that is a note, because checking a Rust change should not
+/// demand a download. On CI it is a failure: the job is provisioned for the
+/// C++, and a skip there reports a pass for code nothing compiled.
+pub fn skipped(why: &str) -> Result<String, String> {
+    skip_or_fail(why, std::env::var_os("CI").is_some())
+}
+
+fn skip_or_fail(why: &str, on_ci: bool) -> Result<String, String> {
+    if on_ci {
+        Err(format!(
+            "{why}\nCI provides this, so a skip here would pass code nothing compiled."
+        ))
+    } else {
+        Ok(format!("skipped: {why}"))
+    }
+}
+
 /// Every documented C++ snippet compiles.
 ///
 /// `includes` is where the headers a snippet includes live, or the reason
-/// there are none — a missing SDK skips this with a note rather than failing a
-/// gate nobody can fix without a download.
+/// there are none — a missing SDK is [`skipped`].
 pub fn snippets_compile(
     includes: Result<Vec<String>, String>,
     expect_some: bool,
@@ -157,7 +175,7 @@ pub fn snippets_compile(
     }
     let flags = match includes {
         Ok(flags) => flags,
-        Err(why) => return Ok(format!("skipped: {why}")),
+        Err(why) => return skipped(&why),
     };
 
     let scratch = std::env::temp_dir().join(format!("xpui-snippets-{}", std::process::id()));
@@ -301,6 +319,16 @@ mod tests {
         // how a comparison passes against nothing at all.
         let missing = std::env::temp_dir().join("xpui-not-here-at-all.h");
         assert!(symbols("xpui_host_", std::slice::from_ref(&missing)).is_err());
+    }
+
+    #[test]
+    fn a_missing_prerequisite_is_a_note_on_a_laptop_and_a_failure_on_ci() {
+        assert_eq!(
+            skip_or_fail("no SDK", false),
+            Ok("skipped: no SDK".to_string())
+        );
+        let why = skip_or_fail("no SDK", true).unwrap_err();
+        assert!(why.starts_with("no SDK"), "{why}");
     }
 
     #[test]

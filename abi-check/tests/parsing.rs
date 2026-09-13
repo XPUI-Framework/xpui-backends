@@ -184,10 +184,9 @@ fn an_empty_rust_side_is_refused() {
 
 /// A boundary's prefix decides what is compared, on **both** sides.
 ///
-/// It was hardcoded to `xpui_` in the Rust scanner for a while after the
-/// prefix became a field, so the C side narrowed and the Rust side did not.
-/// The result is every unmatched Rust symbol reported as "defined in Rust,
-/// absent from C" — a red test naming a fault that does not exist.
+/// A Rust scanner that ignored it would narrow the C side and not the Rust
+/// side, and report every unmatched Rust symbol as "defined in Rust, absent
+/// from C" — a red test naming a fault that does not exist.
 #[test]
 fn the_prefix_narrows_both_sides_alike() {
     const HOST_ONLY: Boundary<'_> = Boundary {

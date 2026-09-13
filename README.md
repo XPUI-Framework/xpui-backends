@@ -1,5 +1,10 @@
 [![CI](https://github.com/XPUI-Framework/xpui-backends/actions/workflows/ci.yml/badge.svg)](https://github.com/XPUI-Framework/xpui-backends/actions/workflows/ci.yml) [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/logo-black.png">
+  <img src="assets/logo-white.png" alt="XPUI" width="64" height="64">
+</picture>
+
 # `xpui-backends`
 
 > [!WARNING]
@@ -12,6 +17,8 @@ need. A backend answers five traits — `Canvas`, `TextMetrics`, `Chrome`,
 write four, because `Chrome` comes from a macro, and the sixth trait a running
 screen needs, `Navigator`, is the application's. Which of the two backends you
 want depends on one question: **does something already own your panel?**
+
+Every document in this repository is listed in [docs/README.md](docs/README.md).
 
 ## Which crate you want
 
@@ -52,17 +59,19 @@ depend on [`xpui`](https://github.com/XPUI-Framework/xpui-framework), and the
 `embedded_graphics` backend on [`xpui-chrome`](https://github.com/XPUI-Framework/xpui-chrome)
 for its themed components. **No boards crate**, by design: a backend takes its
 measurements from whoever wires it and has no idea what a device is. Nothing
-is on crates.io yet, which is what the banner above is about.
+is on crates.io yet, which is why the dependency above is a `git` URL.
 
 ## Requirements
 
 A Rust toolchain for everything but `fui`'s C++ half, which needs two more
 things. **clang-format 21 or newer is required**: the gate's second stage
 fails without it, and refuses an older one rather than trusting it. **The
-FreeInkUI headers are optional**: the gate looks for them beside the checkout
-and at `FREEINK_SDK_INCLUDE`, and skips the shim's two stages with a note
-when it finds neither. [docs/contributing.md](docs/contributing.md) says
-where it looks.
+FreeInkUI headers are optional**: the gate takes `FREEINK_SDK_INCLUDE` when
+it is set, otherwise looks beside the checkout, and skips the shim's two
+stages with a note when it finds neither — except on CI, which fetches the
+pinned revision and fails rather than skips.
+[docs/contributing.md](docs/contributing.md) says where it looks, and why a
+checkout found there is not the pinned revision.
 
 ## Checking it
 
@@ -75,19 +84,6 @@ in Rust, holding nothing it does not run. `./build-and-test.sh fix` formats
 in place first, Rust and C++ both. How a change is reviewed is in
 [docs/contributing.md](docs/contributing.md).
 
-## Where next
-
-| | |
-|---|---|
-| [docs/choosing-a-backend.md](docs/choosing-a-backend.md) | when `embedded_graphics`, when FreeInkUI, and what a third would need |
-| [docs/contributing.md](docs/contributing.md) | building it, the gate, the five review steps, and how a commit is written |
-| [embedded_graphics/docs/design.md](embedded_graphics/docs/design.md) | monochrome by design, the faces it ships, input, clipping, and type |
-| [embedded_graphics/docs/screenshots.md](embedded_graphics/docs/screenshots.md) | pixel tests against a committed PNG, and why the first run fails |
-| [embedded_graphics/docs/hardware.md](embedded_graphics/docs/hardware.md) | what a parallel-bus panel taught: why `PacedFill` exists |
-| [fui/docs/design.md](fui/docs/design.md) | why the FreeInkUI backend has the shape it does, the boundary, input, and the distinctions that break quietly |
-| [fui/docs/coverage.md](fui/docs/coverage.md) | which FreeInkUI components the shim uses, and which it does not |
-| [fui/docs/firmware.md](fui/docs/firmware.md) | adding the shim to a firmware: sources, includes, wiring, what the build does not ship |
-
 ## Where it sits
 
 Every arrow is a dependency in a `Cargo.toml`, and they all point inward
@@ -97,7 +93,7 @@ knowing it exists, and a firmware reaches whatever it needs directly rather
 than through whoever happens to sit above it.
 
 ```mermaid
-flowchart BT
+flowchart TD
   xpui["xpui<br/>the framework"]
   chrome["xpui-chrome<br/>components"]
   boards["xpui-boards<br/>seven devices"]
@@ -139,6 +135,9 @@ flowchart BT
   dev --> gallery
   style backends stroke-width:3px
 ```
+
+How the ten are checked out side by side, and the rules all of them share, is in
+[`xpui`'s `docs/orientation.md`](https://github.com/XPUI-Framework/xpui-framework/blob/main/docs/orientation.md).
 
 ## License
 

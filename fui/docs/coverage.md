@@ -113,5 +113,5 @@ Four worth singling out:
 
 *Every count here was read from the SDK this shim compiles against — 33 headers
 under `<sdk>/libs/ui/FreeInkUI/include/components/` — and every call site from
-[`cpp/xpui_fui.cpp`](../cpp/xpui_fui.cpp). `./build-and-test.sh check` finds the
-SDK beside this checkout or takes `FREEINK_SDK_INCLUDE`.*
+[`cpp/xpui_fui.cpp`](../cpp/xpui_fui.cpp). `./build-and-test.sh check` takes
+`FREEINK_SDK_INCLUDE`, or else finds the SDK beside this checkout.*

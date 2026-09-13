@@ -153,8 +153,9 @@ impl Platform for MyPlatform {
     fn is_pressed(&self, button: Button) -> bool { my_input().held(button) }
     fn was_released(&self, button: Button) -> bool { my_input().released(button) }
     // Does this device carry Left and Right? Read it off the board rather
-    // than inferring it from the shape of the device — `xteink::X3` does and
-    // `xteink::X4_PRO` does not, and both are readers.
+    // than inferring it from the shape of the device —
+    // `xpui_boards_xteink::X3` does and `xpui_boards_xteink::X4_PRO` does
+    // not, and both are readers.
     fn has_left_right_keys(&self) -> bool { true }
 }
 ```

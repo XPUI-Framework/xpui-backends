@@ -67,7 +67,7 @@ impl Fonts {
         reader: 39,
     };
 
-    /// The set for a small colour panel — a Tufty 2040, with 30-pixel rows.
+    /// The set for a small colour panel, with 30-pixel rows.
     pub const COMPACT: Fonts = Fonts {
         family: &HELVETICA,
         ui: 21,
@@ -75,12 +75,11 @@ impl Fonts {
         reader: 30,
     };
 
-    /// The set for a strip — a Badger 2040, with 24-pixel rows and a 16-pixel
-    /// hint band.
+    /// The set for a strip, with 24-pixel rows and a 16-pixel hint band.
     ///
     /// The smallest chrome and not the smallest type: 111 ppi is half a
     /// reader's density, so 18 pixels here is 4.1mm — larger, on the glass,
-    /// than 30 pixels on an X4.
+    /// than 30 pixels on a 218-ppi reader.
     pub const SMALL: Fonts = Fonts {
         family: &HELVETICA,
         ui: 18,

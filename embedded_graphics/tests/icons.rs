@@ -1,9 +1,10 @@
 //! That icons draw something recognisable.
 //!
-//! This backend used to report `icon_size == 0` and draw nothing, so `Icon`
-//! and `IconToggle` left holes and the layout did not even reserve space for
-//! them. These pin the fix, and the sheet at the end is there to be *looked*
-//! at — a glyph can pass every numeric assertion and still be a smudge.
+//! A backend that reports `icon_size == 0` and draws nothing leaves holes
+//! where `Icon` and `IconToggle` go, and the layout reserves no space for
+//! them. These pin that neither happens, and the sheet at the end is there to
+//! be *looked* at — a glyph can pass every numeric assertion and still be a
+//! smudge.
 
 use std::sync::{Mutex, MutexGuard};
 
@@ -144,9 +145,8 @@ fn no_two_icons_are_the_same_picture() {
 ///
 /// Numbers cannot tell you whether a gear looks like a gear, so the sheet
 /// exists to be looked at — but it is also compared, because a sheet nobody
-/// compares is a sheet that can change without anyone noticing. This used to
-/// assert only that the file had been written, which is a thing that cannot
-/// fail.
+/// compares is a sheet that can change without anyone noticing. Asserting
+/// only that the file was written would be a test that cannot fail.
 #[test]
 fn the_icon_sheet() {
     let _guard = serial();

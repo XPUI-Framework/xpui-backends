@@ -207,9 +207,9 @@ Two failures to look for, both real here:
 
 **Scope this to the documents the change touches.** For a document the change
 touches, ask: what would a reader want *next*, and is it one click away? The
-root README reaches every document in its `docs/` through `## Where next`; a
-`docs/` page reaches the pages beside it rather than being an island off the
-index; a tutorial reaches the reference.
+root README links `docs/README.md`, and that index reaches every document in
+`docs/`; a `docs/` page reaches the pages beside it rather than being an
+island off the index; a tutorial reaches the reference.
 
 Do not manufacture links. A link that makes sense is one a reader would follow;
 a wall of "see also" is noise, and noise is skipped.

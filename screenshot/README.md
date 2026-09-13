@@ -46,7 +46,7 @@ A mismatch writes `expected`, `actual` and `differences` side by side into
 the workflows in the repositories that hold goldens upload that directory on
 failure. [`xpui-embedded-graphics`](../embedded_graphics/) uses it for its
 seven images, [`xpui-gallery`](https://github.com/XPUI-Framework/xpui-gallery)
-for its seventy board captures, and
+for its seventy board captures and three typeface captures, and
 [`xpui-simulator`](https://github.com/XPUI-Framework/xpui-simulator) for the
 framebuffer alone.
 

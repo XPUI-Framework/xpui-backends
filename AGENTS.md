@@ -41,8 +41,11 @@ change is done, and read the real exit code.
   checker can read.
 - **`documented C++ compiles`** — every `cpp` fence in every page is compiled
   with the headers on the path.
-- **`the shim compiles`** — `xpui_fui.cpp` against the FreeInkUI SDK named by
-  `FREEINK_SDK_INCLUDE`; skips with a note when unset, which CI never is.
+- **`the shim compiles`** — `xpui_fui.cpp` against the FreeInkUI headers:
+  `FREEINK_SDK_INCLUDE` when it is set, otherwise an unpinned sibling
+  checkout [`docs/contributing.md`](docs/contributing.md) names; skips with a
+  note only when it finds neither. CI always sets the variable, and with `CI`
+  set a skip is a failure.
 - **`lint` runs four times**: the host, both bare-metal targets for the two
   backends, and `xpui-screenshot` without `golden` — the shape the simulator
   consumes. `tests` runs `xpui-screenshot` without `golden` too.
@@ -74,7 +77,9 @@ change is done, and read the real exit code.
 | Document | Proven by |
 |---|---|
 | [`README.md`](README.md) | its paths and commands resolve; it carries no `rust` fence |
-| [`embedded_graphics/README.md`](embedded_graphics/README.md), [`embedded_graphics/docs/design.md`](embedded_graphics/docs/design.md), [`embedded_graphics/docs/screenshots.md`](embedded_graphics/docs/screenshots.md), [`embedded_graphics/docs/hardware.md`](embedded_graphics/docs/hardware.md) | doctests, mounted by `embedded_graphics/src/lib.rs` |
+| [`docs/README.md`](docs/README.md) | its paths resolve; the README-heading check exempts it, because it is the index of `docs/`, not a front page |
+| [`embedded_graphics/README.md`](embedded_graphics/README.md), [`embedded_graphics/docs/design.md`](embedded_graphics/docs/design.md), [`embedded_graphics/docs/screenshots.md`](embedded_graphics/docs/screenshots.md) | doctests, mounted by `embedded_graphics/src/lib.rs` |
+| [`embedded_graphics/docs/hardware.md`](embedded_graphics/docs/hardware.md) | its paths resolve; mounted by `embedded_graphics/src/lib.rs`, but it carries no `rust` fence, so no doctest |
 | [`fui/README.md`](fui/README.md), [`fui/docs/design.md`](fui/docs/design.md) | doctests, mounted by `fui/src/lib.rs` |
 | [`fui/cpp/README.md`](fui/cpp/README.md), [`fui/docs/firmware.md`](fui/docs/firmware.md), [`fui/docs/coverage.md`](fui/docs/coverage.md) | paths and commands resolve; any `cpp` fence is compiled by `documented C++ compiles` |
 | [`screenshot/README.md`](screenshot/README.md) | doctests, mounted by `screenshot/src/lib.rs` behind `golden` |

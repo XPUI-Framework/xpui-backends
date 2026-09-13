@@ -9,9 +9,10 @@
 //! a cast per argument. They are NUL-terminated either way.
 //!
 //! `safe fn` marks a call that passes no pointer and cannot reach undefined
-//! behaviour, provided `attach`'s contract holds. Everything taking a raw pointer stays `unsafe`, so the keyword
-//! keeps meaning "there is a rule here you must keep" rather than "this
-//! crosses into C++", which is true of every line.
+//! behaviour, provided `attach`'s contract holds. Everything taking a raw
+//! pointer stays `unsafe`, so the keyword keeps meaning "there is a rule here
+//! you must keep" rather than "this crosses into C++", which is true of every
+//! line.
 
 use core::ffi::c_void;
 

@@ -1,7 +1,7 @@
 //! `PacedFill`'s whole job is a negative: two methods must **not** reach the
 //! display it wraps.
 //!
-//! That is invisible everywhere it used to live. A forwarded `fill_solid` draws
+//! That is invisible to a snapshot. A forwarded `fill_solid` draws
 //! the same pixels on a framebuffer, passes every snapshot, and only misbehaves
 //! on a panel whose write strobe is driven by the driver's shortcut — which no
 //! test rig here has. So the property is asserted directly instead: a target

@@ -7,9 +7,9 @@
 //! the failure surfaces as a rendering fault somewhere unrelated.
 //!
 //! The parsing and comparing is [`xpui_abi_check`], which is its own crate
-//! because the C++ host example owns two boundaries of its own and a second
-//! copy could not see its own drift. This file is the list of pairs, and
-//! nothing else. Five of them, in two languages, across two crates:
+//! because `xpui-cpp` owns two boundaries of its own and a second copy could
+//! not see its own drift. This file is the list of pairs, and nothing else.
+//! Three of them, in two languages:
 //!
 //! | C | Rust | who defines |
 //! |---|---|---|
@@ -113,7 +113,7 @@ fn the_lifecycle_agrees_with_the_rust_that_defines_it() {
         &signatures_from_rust(&rust, &PLAIN),
     );
 }
-/// Every file the five pairs above name, and whether it is there.
+/// Every file the three pairs above name, and whether it is there.
 ///
 /// `assert_agree` refuses an empty parse, so a boundary that read nothing
 /// fails rather than passing — but it fails inside one test with a message
