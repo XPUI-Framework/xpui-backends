@@ -5,7 +5,7 @@
   <img src="assets/logo-white.png" alt="XPUI" width="64" height="64">
 </picture>
 
-# `xpui-backends`
+# Backends
 
 > [!WARNING]
 > Under heavy development. Not production-ready. The API can break without
@@ -135,9 +135,6 @@ flowchart TD
   dev --> gallery
   style backends stroke-width:3px
 ```
-
-How the ten are checked out side by side, and the rules all of them share, is in
-[`xpui`'s `docs/orientation.md`](https://github.com/XPUI-Framework/xpui-framework/blob/main/docs/orientation.md).
 
 ## License
 
