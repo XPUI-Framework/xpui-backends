@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # `.clang-format` uses options that need 21 or newer, and Ubuntu ships 18.
       # There is no `clang-format-21` in its repositories, so apt is not an
