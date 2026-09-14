@@ -63,6 +63,7 @@ it looks.
 
 | | |
 |---|---|
+| [`docs/reference.md`](docs/reference.md) | every public item: the backend and its platform, the screen lifecycle, and the C ABI |
 | [`docs/design.md`](docs/design.md) | why this backend has the shape it does, the boundary's four places, input, and the distinctions that break things quietly |
 | [`docs/coverage.md`](docs/coverage.md) | which FreeInkUI components the shim uses, which it draws itself, and which it leaves alone |
 | [`docs/firmware.md`](docs/firmware.md) | adding the shim to a firmware: sources, includes, wiring, what the build does not ship |

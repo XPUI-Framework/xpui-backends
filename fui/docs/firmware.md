@@ -1,10 +1,16 @@
 # Adding the shim to a firmware
 
 `cpp/xpui_fui.cpp` implements the C ABI in `cpp/xpui_fui.h` against the
-FreeInk SDK's UI library. Why it binds to `freeink::ui::DisplayTarget`, and
-why that makes it firmware-agnostic, is
-[`../cpp/README.md`](../cpp/README.md); this page is the whole of what a
-firmware does with it.
+FreeInk SDK's UI library. It binds to `freeink::ui::DisplayTarget`, which needs
+nothing but a raw 1-bit framebuffer and ships its own Noto Sans bitmap font, so
+the file is firmware-agnostic: any board that can hand over a framebuffer can
+host `xpui`. This page is the whole of what a firmware does with it.
+
+The header is the contract. A firmware with its own themed renderer can
+implement the same ABI instead of compiling this file; the header, the Rust
+declarations in `src/raw.rs`, `xpui_fui.cpp` and the Rust test doubles move
+together, so a symbol added to one and not the others is a link error.
+Every function is listed in [the raw reference](reference/raw.md).
 
 ## Adding it to a firmware
 

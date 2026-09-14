@@ -55,7 +55,8 @@ pub fn assert_screenshot(name: &str, frame: &Framebuffer) {
     }
 }
 
-/// The same comparison, as a `Result`.
+/// Compares `frame` with its golden as [`assert_screenshot`] does, returning
+/// the report rather than panicking with it.
 ///
 /// For a caller capturing many frames in one test and reporting them together
 /// where [`assert_screenshot`] would stop at the first. `Err` holds the whole

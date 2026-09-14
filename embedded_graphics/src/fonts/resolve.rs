@@ -35,7 +35,7 @@ pub enum Piece<'a> {
         /// The characters this face draws.
         text: &'a str,
     },
-    /// Nothing in the chain has this character. Draw a box this size.
+    /// A character nothing in the chain has, drawn as a box this size.
     Marker {
         /// The box's width.
         width: i32,

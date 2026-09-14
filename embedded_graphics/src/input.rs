@@ -51,8 +51,9 @@ pub struct InputState {
 }
 
 impl InputState {
-    /// Clears everything that lasts one frame. Held buttons survive; that is
-    /// the difference between "is down" and "went down".
+    /// Clears everything that lasts one frame.
+    ///
+    /// Held buttons survive; that is the difference between "is down" and "went down".
     pub fn begin_frame(&mut self) {
         self.pressed = [false; BUTTONS];
         self.released = [false; BUTTONS];
@@ -80,8 +81,9 @@ impl InputState {
         self.tap = Some(at);
     }
 
-    /// A finger is down at `at`. Reported every frame it stays down, which is
-    /// the signal a slider drag needs.
+    /// A finger is down at `at`.
+    ///
+    /// Reported every frame it stays down, which is the signal a slider drag needs.
     pub fn touch_down(&mut self, at: Point) {
         self.touch_at = Some(at);
     }

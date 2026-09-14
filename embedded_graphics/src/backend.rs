@@ -134,7 +134,9 @@ impl<D: DrawTarget> Backend<D> {
         self.left_right_keys
     }
 
-    /// The words its hint bar shows. English until an application says so.
+    /// The words its hint bar shows.
+    ///
+    /// English until an application says so.
     pub fn with_labels(mut self, labels: Labels) -> Self {
         self.labels = labels;
         self
@@ -152,13 +154,14 @@ impl<D: DrawTarget> Backend<D> {
         self
     }
 
-    /// Sets the family the framework's roles resolve through.
+    /// Sets the type the framework's roles resolve through: a family, and the
+    /// size each role wants.
     pub fn with_fonts(self, fonts: Fonts) -> Self {
         self.fonts.with(|current| *current = fonts);
         self
     }
 
-    /// The family in use, as [`with_fonts`](Backend::with_fonts) or a switch
+    /// The type in use, as [`with_fonts`](Backend::with_fonts) or a switch
     /// left it.
     pub fn fonts(&self) -> Fonts {
         self.fonts.with(|fonts| *fonts)

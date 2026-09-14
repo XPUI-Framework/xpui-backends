@@ -94,6 +94,14 @@ mod guides {
     pub mod readme {}
     #[doc = include_str!("../docs/design.md")]
     pub mod design {}
+    #[doc = include_str!("../docs/reference.md")]
+    pub mod reference {}
+    #[doc = include_str!("../docs/reference/backend.md")]
+    pub mod reference_backend {}
+    #[doc = include_str!("../docs/reference/lifecycle.md")]
+    pub mod reference_lifecycle {}
+    #[doc = include_str!("../docs/reference/raw.md")]
+    pub mod reference_raw {}
 }
 
 /// The source of [`register_screen!`], for an ABI checker to parse.

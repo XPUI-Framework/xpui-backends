@@ -3,8 +3,8 @@
 use crate::platform::Platform;
 use crate::raw;
 
-/// The backend. Stateless: everything it needs lives on the C++ side, bound
-/// once by [`attach`].
+/// The backend, stateless because everything it needs lives on the C++ side,
+/// bound once by [`attach`].
 pub struct Backend<P: Platform + 'static> {
     pub(crate) platform: &'static P,
 }

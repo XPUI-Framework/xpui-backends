@@ -61,8 +61,10 @@ impl Framebuffer {
         }
     }
 
-    /// Lays ink down, or takes it away. Out of bounds is ignored, as
-    /// [`get`](Framebuffer::get) reads out of bounds as blank.
+    /// Lays ink down, or takes it away.
+    ///
+    /// Out of bounds is ignored, as [`get`](Framebuffer::get) reads out of
+    /// bounds as blank.
     pub fn set(&mut self, x: i32, y: i32, ink: bool) {
         if x < 0 || y < 0 || x >= self.width || y >= self.height {
             return;
@@ -225,7 +227,7 @@ impl Framebuffer {
         out
     }
 
-    /// Writes a 1-bit BMP next to the test binary, so a person can actually
+    /// Writes a 1-bit BMP into [`screenshot_dir`], so a person can actually
     /// look at the frame.
     ///
     /// A debugging helper, and only that: **nothing compares a BMP**. The
@@ -238,7 +240,7 @@ impl Framebuffer {
         self.write_bmp_in(screenshot_dir(), name)
     }
 
-    /// The same, somewhere specific.
+    /// Writes a 1-bit BMP into `dir`, returning the file's path.
     pub fn write_bmp_in(&self, dir: PathBuf, name: &str) -> PathBuf {
         fs::create_dir_all(&dir).ok();
         let path = dir.join(format!("{name}.bmp"));

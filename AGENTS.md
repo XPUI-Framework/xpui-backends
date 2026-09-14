@@ -25,7 +25,7 @@ error or a corrupt call frame.
 ```
 
 ```text
-format · C++ format · file sizes · crates are tested · READMEs warn · prose is compiled · documented paths resolve · rustdoc links resolve · documented commands resolve · the header's symbols are all defined · documented C++ compiles · lint · tests · doctests · the shim compiles · README sections · AGENTS.md · published crates deny missing_docs · comment blocks · comment narration
+format · C++ format · file sizes · crates are tested · READMEs warn · prose is compiled · documented paths resolve · rustdoc links resolve · the reference mirrors rustdoc · documented commands resolve · the header's symbols are all defined · documented C++ compiles · lint · tests · doctests · the shim compiles · README sections · AGENTS.md · published crates deny missing_docs · comment blocks · comment narration
 ```
 
 There is no `all` mode; this list is the whole of it, and a last stage,
@@ -80,13 +80,21 @@ change is done, and read the real exit code.
 | [`docs/README.md`](docs/README.md) | its paths resolve; the README-heading check exempts it, because it is the index of `docs/`, not a front page |
 | [`embedded_graphics/README.md`](embedded_graphics/README.md), [`embedded_graphics/docs/design.md`](embedded_graphics/docs/design.md), [`embedded_graphics/docs/screenshots.md`](embedded_graphics/docs/screenshots.md) | doctests, mounted by `embedded_graphics/src/lib.rs` |
 | [`embedded_graphics/docs/hardware.md`](embedded_graphics/docs/hardware.md) | its paths resolve; mounted by `embedded_graphics/src/lib.rs`, but it carries no `rust` fence, so no doctest |
+| [`embedded_graphics/docs/reference.md`](embedded_graphics/docs/reference.md), [`embedded_graphics/docs/reference/backend.md`](embedded_graphics/docs/reference/backend.md), [`embedded_graphics/docs/reference/fonts.md`](embedded_graphics/docs/reference/fonts.md) | doctests, mounted by `embedded_graphics/src/lib.rs`; `the reference mirrors rustdoc` |
 | [`fui/README.md`](fui/README.md), [`fui/docs/design.md`](fui/docs/design.md) | doctests, mounted by `fui/src/lib.rs` |
+| [`fui/docs/reference.md`](fui/docs/reference.md), [`fui/docs/reference/backend.md`](fui/docs/reference/backend.md), [`fui/docs/reference/lifecycle.md`](fui/docs/reference/lifecycle.md), [`fui/docs/reference/raw.md`](fui/docs/reference/raw.md) | doctests, mounted by `fui/src/lib.rs`, linking against the `testing` doubles; `the reference mirrors rustdoc` |
 | [`fui/cpp/README.md`](fui/cpp/README.md), [`fui/docs/firmware.md`](fui/docs/firmware.md), [`fui/docs/coverage.md`](fui/docs/coverage.md) | paths and commands resolve; any `cpp` fence is compiled by `documented C++ compiles` |
-| [`screenshot/README.md`](screenshot/README.md) | doctests, mounted by `screenshot/src/lib.rs` behind `golden` |
+| [`screenshot/README.md`](screenshot/README.md), [`screenshot/docs/reference.md`](screenshot/docs/reference.md) | doctests, mounted by `screenshot/src/lib.rs` behind `golden`; the reference, `the reference mirrors rustdoc` |
 | [`abi-check/README.md`](abi-check/README.md) | paths resolve; its fences are `text` and `toml` on purpose |
 | [`docs/choosing-a-backend.md`](docs/choosing-a-backend.md), [`docs/contributing.md`](docs/contributing.md) | paths and commands resolve; the umbrella command is `xpui-dev`'s |
 | `AGENTS.md` | the stage list above is compared to what the gate runs |
 | every `///` and `//!` | `rustdoc links resolve`, and the two comment checks |
+
+**The reference.** `REFERENCE` in `xtask/src/main.rs` holds `xpui_eg`,
+`xpui_fui` and `xpui_screenshot` to their pages, names prefixed by crate.
+`xpui_abi_check` is left out on purpose: it is tooling for this repository's
+gate and for `xpui-cpp`'s, compared against headers rather than called by
+anyone building a screen, a firmware or a backend, so it has no reference page.
 
 ## Git
 

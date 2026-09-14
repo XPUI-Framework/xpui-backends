@@ -29,8 +29,28 @@ only wants the framebuffer — the simulator does — should not pay for it.
 xpui_screenshot::assert_screenshot("settings", &framebuffer);
 ```
 
-`check_screenshot` is the same comparison as a `Result`, for a test capturing
-many frames that wants to report all the failures rather than the first.
+A separate crate from the backends because it is `std`, it writes files, and
+a backend builds for bare metal. `Framebuffer` is a plain 1-bit `DrawTarget`
+with no window and no hardware, so a backend built over one renders a screen in
+an ordinary `cargo test`, and its `with_display` hands the frame to the
+assertion. A picture and a number say different things, so a test usually
+carries both:
+
+```rust,no_run
+# use xpui_screenshot::{Framebuffer, assert_screenshot};
+# let frame = Framebuffer::new(480, 800);
+assert_screenshot("my_screen", &frame);      // against a committed PNG
+assert!(frame.ink_in(0, 0, 480, 56) > 0);    // and what a picture cannot say
+```
+
+`check_screenshot` is the same comparison handing back its report as
+`Result<(), String>` rather than panicking with it, for a test that captures
+many frames and wants to name every one that moved rather than stopping at the
+first. A broken harness — a golden that will not decode, a directory that will
+not take a file — still panics through either of them.
+[`xpui-gallery`'s `gallery/`](https://github.com/XPUI-Framework/xpui-gallery/tree/main/gallery)
+renders its screens on every board that way, so one token moved by one pixel
+names every board it reached rather than the first.
 
 **The first run fails on purpose.** A golden that does not exist yet is
 written, and then the test fails: nobody can commit a picture they have never
@@ -41,26 +61,30 @@ file and read it before staging.
 UPDATE_SNAPSHOTS=1 cargo test
 ```
 
-A mismatch writes `expected`, `actual` and `differences` side by side into
-`target/diff/`, so a failure on CI can be looked at rather than guessed at —
+A mismatch prints an ASCII view marking every block that changed, and writes
+`expected`, `actual` and `differences` side by side into `target/diff/`, so a failure on CI can be looked at rather than guessed at —
 the workflows in the repositories that hold goldens upload that directory on
 failure. [`xpui-embedded-graphics`](../embedded_graphics/) uses it for its
 seven images, [`xpui-gallery`](https://github.com/XPUI-Framework/xpui-gallery)
 for its seventy board captures and three typeface captures, and
 [`xpui-simulator`](https://github.com/XPUI-Framework/xpui-simulator) for the
-framebuffer alone.
+framebuffer alone. `embedded_graphics/tests/screenshots.rs` is a whole suite
+written this way.
 
-Its own comparator is tested against itself: ten cases in `src/golden/`, one of
-which is a committed image whose only job is to prove the comparison still
-returns `Err` when it should. Replace its last two lines with `Ok(())` and the
-whole organisation's pixel suite passes while comparing nothing — which is the
-one failure this technique cannot survive, so it is checked here.
+`write_bmp` and `thumbnail` are for looking at a frame rather than asserting on
+one. Nothing compares them.
 
 ## Checking it
 
 The gate is the repository's; run `./build-and-test.sh` from the root. It
 lints and doctests this crate a second time without `golden`, the shape the
 simulator consumes.
+
+## Where next
+
+| | |
+|---|---|
+| [`docs/reference.md`](docs/reference.md) | `Framebuffer`, `assert_screenshot`, `check_screenshot` and `screenshot_dir`: every public item, with examples |
 
 ## License
 

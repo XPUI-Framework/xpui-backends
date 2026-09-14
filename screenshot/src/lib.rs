@@ -24,6 +24,8 @@
 mod guides {
     #[doc = include_str!("../README.md")]
     pub mod readme {}
+    #[doc = include_str!("../docs/reference.md")]
+    pub mod reference {}
 }
 
 pub mod framebuffer;

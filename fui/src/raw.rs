@@ -52,17 +52,19 @@ unsafe extern "C" {
     pub safe fn xpui_fui_stroke_rect(x: i32, y: i32, w: i32, h: i32);
     /// A one-pixel line in ink, both ends included.
     pub safe fn xpui_fui_draw_line(x1: i32, y1: i32, x2: i32, y2: i32);
-    /// Fills with a 50% dither, clearing first. Reads as grey on one bit.
+    /// Fills with a 50% dither, clearing first, which reads as grey on one bit.
     pub safe fn xpui_fui_fill_rect_dither(x: i32, y: i32, w: i32, h: i32, light: u8);
     /// Adds ink on one checkerboard parity without clearing, so about half of
     /// whatever was behind survives.
     pub safe fn xpui_fui_scrim(x: i32, y: i32, w: i32, h: i32);
-    /// Confines drawing to a rect. A zero width or height lifts the clip.
+    /// Confines drawing to a rect; a zero width or height lifts the clip.
     ///
     /// FreeInkUI has no clipping of its own, so the shim implements this
     /// itself over the framebuffer.
     pub safe fn xpui_fui_set_clip(x: i32, y: i32, w: i32, h: i32);
-    /// Draws a 1-bpp bitmap. Row-major, MSB first, `(w + 7) / 8` bytes per
+    /// Draws a 1-bpp bitmap.
+    ///
+    /// Row-major, MSB first, `(w + 7) / 8` bytes per
     /// row, and **bit 0 is ink** — inverted from the framebuffer's own
     /// convention, and from the usual one.
     ///
@@ -91,8 +93,8 @@ unsafe extern "C" {
     // -- theme --------------------------------------------------------------
     /// One theme value, by `ThemeMetric`'s discriminant, in pixels.
     pub safe fn xpui_fui_metric(metric: u8) -> i32;
-    /// The header band. A null `title` or `subtitle` means nothing for that
-    /// part.
+    /// The header band, where a null `title` or `subtitle` means nothing for
+    /// that part.
     ///
     /// # Safety
     /// Each pointer must be null or NUL-terminated and valid for the call.
@@ -110,7 +112,9 @@ unsafe extern "C" {
         label: *const u8,
         right: *const u8,
     );
-    /// The four hint slots in meaning order. A null label means the host's
+    /// The four hint slots in meaning order.
+    ///
+    /// A null label means the host's
     /// own word for that slot, chosen by the `*_word` tag beside it; an empty
     /// one means blank.
     ///
@@ -156,8 +160,9 @@ unsafe extern "C" {
         visible: i32,
         offset: i32,
     );
-    /// The themed list. `cell` is called back per row and field; `field`
-    /// selects title (0), subtitle (1) or value (2), and returning null omits
+    /// The themed list.
+    ///
+    /// `cell` is called back per row and field; `field` selects title (0), subtitle (1) or value (2), and returning null omits
     /// that field.
     ///
     /// The strings the callback returns belong to the caller and are only
@@ -188,7 +193,7 @@ unsafe extern "C" {
         cell: CellFn,
         ctx: *mut c_void,
     );
-    /// Where row `index` of that dialog lands, written into `out_xywh`.
+    /// Where row `index` of the themed dialog lands, written into `out_xywh`.
     ///
     /// Recomputed from the same layout the painter uses rather than read back
     /// out of a hit buffer, so it answers before the first paint and cannot go

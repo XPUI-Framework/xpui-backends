@@ -18,7 +18,8 @@ pub trait Platform: Sync {
     /// Whether `button` came up this frame.
     fn was_released(&self, button: Button) -> bool;
 
-    /// See [`InputSource::has_left_right_keys`](xpui::host::InputSource::has_left_right_keys).
+    /// Whether the device has a Left/Right pair to nudge a value with; see
+    /// [`InputSource::has_left_right_keys`](xpui::host::InputSource::has_left_right_keys).
     ///
     /// **Required, unlike everything below it**: no answer is safe to inherit,
     /// and only the firmware knows which keys its device carries. The
@@ -28,7 +29,9 @@ pub trait Platform: Sync {
     fn has_left_right_keys(&self) -> bool;
 
     /// Whether *this frame* carries a touch — not whether the device has a
-    /// touchscreen. See
+    /// touchscreen.
+    ///
+    /// See
     /// [`InputSource::has_touch`](xpui::host::InputSource::has_touch); the
     /// method above is the one that describes the hardware.
     fn has_touch(&self) -> bool {
@@ -58,7 +61,8 @@ pub trait Platform: Sync {
     fn was_home_gesture(&self) -> bool {
         false
     }
-    /// See [`InputSource::swipe_moves_selection`](xpui::host::InputSource::swipe_moves_selection).
+    /// Whether a swipe moves focus rather than dragging content; see
+    /// [`InputSource::swipe_moves_selection`](xpui::host::InputSource::swipe_moves_selection).
     fn swipe_moves_selection(&self) -> bool {
         false
     }

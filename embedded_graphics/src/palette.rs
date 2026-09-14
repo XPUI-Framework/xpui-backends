@@ -2,8 +2,9 @@
 
 use embedded_graphics::pixelcolor::BinaryColor;
 
-/// The two colours ink and background map onto. The wrong pair inverts a
-/// panel silently; the crate root says which is which.
+/// The two colours ink and background map onto.
+///
+/// The wrong pair inverts a panel silently; the crate root says which is which.
 #[derive(Copy, Clone, Debug)]
 pub struct Palette<C> {
     /// What ink paints as.
@@ -20,13 +21,17 @@ impl<C> Palette<C> {
 }
 
 impl Palette<BinaryColor> {
-    /// Ink is `On`. The common case, and what the simulator uses.
+    /// Ink is `On`.
+    ///
+    /// The common case, and what the simulator uses.
     pub const INK_IS_ON: Self = Palette {
         ink: BinaryColor::On,
         background: BinaryColor::Off,
     };
 
-    /// Ink is `Off`. Some 1-bit panels invert: `uc8151`, the Badger 2040's
+    /// Ink is `Off`.
+    ///
+    /// Some 1-bit panels invert: `uc8151`, the Badger 2040's
     /// controller, maps `Off` to black so bitmaps load unmirrored.
     pub const INK_IS_OFF: Self = Palette {
         ink: BinaryColor::Off,

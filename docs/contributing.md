@@ -43,7 +43,12 @@ Three things bite here more than anywhere else:
 - **The goldens.** `embedded_graphics/tests/` compares frames against
   committed PNGs; a first run for a new one writes it and fails. Accept an
   intended change with `UPDATE_SNAPSHOTS=1 cargo test --workspace`, then open
-  the file and read it before staging.
+  the file and read it before staging. `xpui-screenshot`'s comparator is
+  tested against itself: ten cases in `screenshot/src/golden/`, one of which
+  is a committed image whose only job is to prove the comparison still returns
+  `Err` when it should. Replace its last two lines with `Ok(())` and the whole
+  organisation's pixel suite passes while comparing nothing — the one failure
+  this technique cannot survive, so it is checked there.
 
 ## The review
 

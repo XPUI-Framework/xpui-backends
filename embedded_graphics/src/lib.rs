@@ -115,4 +115,10 @@ mod guides {
     pub mod design {}
     #[doc = include_str!("../docs/hardware.md")]
     pub mod hardware {}
+    #[doc = include_str!("../docs/reference.md")]
+    pub mod reference {}
+    #[doc = include_str!("../docs/reference/backend.md")]
+    pub mod reference_backend {}
+    #[doc = include_str!("../docs/reference/fonts.md")]
+    pub mod reference_fonts {}
 }

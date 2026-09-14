@@ -131,7 +131,9 @@ impl Fonts {
     }
 
     /// The id this backend reports for a role: the tier's bytes **and the
-    /// family's name**. Both halves are needed — a face swapped for different
+    /// family's name**.
+    ///
+    /// Both halves are needed — a face swapped for different
     /// bytes has to move the id, and two families over one tier that differ
     /// only in what they fall back to draw the same string differently and
     /// must not claim the same id. Hashed on every call: a dozen byte

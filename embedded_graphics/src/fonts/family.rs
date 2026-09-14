@@ -42,6 +42,7 @@ pub struct Tier {
     /// The bold face.
     pub bold: &'static FontRenderer,
     /// `None` when the family was never cut in it — u8g2's Helvetica was not.
+    ///
     /// Asking for italic then gets the regular face, which is the honest
     /// answer: a slanted approximation is a different typeface.
     pub italic: Option<&'static FontRenderer>,
@@ -89,9 +90,13 @@ pub const fn font_id(styles: &[&[u8]]) -> FontId {
 
 /// A typeface, in ascending size order.
 pub struct Family {
-    /// What a picker shows. Not an identity — the id is the bytes.
+    /// What a picker shows.
+    ///
+    /// Not an identity — the id is the bytes.
     pub name: &'static str,
-    /// Ascending by `line_height`. [`tier_for`](Family::tier_for) relies on it.
+    /// The sizes it was cut in, ascending by `line_height`.
+    ///
+    /// [`tier_for`](Family::tier_for) relies on the order.
     pub tiers: &'static [Tier],
     /// Where a glyph this family lacks is looked for.
     ///

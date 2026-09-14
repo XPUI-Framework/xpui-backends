@@ -72,6 +72,7 @@ The gate is the repository's; run `./build-and-test.sh` from the root.
 
 | | |
 |---|---|
+| [`docs/reference.md`](docs/reference.md) | every public item: the backend, its input and palette, and the type it is set in |
 | [`docs/design.md`](docs/design.md) | monochrome by design, the faces it ships, input, clipping through the target, and bringing your own type |
 | [`docs/screenshots.md`](docs/screenshots.md) | render to memory and compare against a committed PNG, including why the first run fails |
 | [`docs/hardware.md`](docs/hardware.md) | what a parallel-bus panel taught: why `PacedFill` exists |

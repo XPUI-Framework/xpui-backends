@@ -24,7 +24,8 @@ pub fn into_handle<S: Screen + 'static>(screen: S) -> *mut c_void {
     handle_for(Box::new(Runtime::new(screen)))
 }
 
-/// The same, for a screen whose type has already been erased.
+/// Wraps a screen whose type has already been erased, returning the opaque
+/// handle.
 ///
 /// This is what lets a Rust screen push another one onto a stack that lives in
 /// C++: [`Navigator::present`](xpui::host::Navigator::present) is handed a
@@ -84,7 +85,9 @@ pub unsafe extern "C" fn xpui_screen_on_enter(handle: *mut c_void) {
     unsafe { with(handle, |driver| driver.on_enter()) }
 }
 
-/// One frame of input. Call once per host frame, before rendering.
+/// One frame of input.
+///
+/// Call once per host frame, before rendering.
 ///
 /// # Safety
 /// `handle` must be null or a live handle from [`into_handle`] or
@@ -106,8 +109,9 @@ pub unsafe extern "C" fn xpui_screen_on_exit(handle: *mut c_void) {
     unsafe { with(handle, |driver| driver.on_exit()) }
 }
 
-/// Paints the screen into whatever `xpui_fui_attach` was given. No renderer
-/// argument: what paints is the installed host, and a parameter nothing
+/// Paints the screen into whatever `xpui_fui_attach` was given.
+///
+/// No renderer argument: what paints is the installed host, and a parameter nothing
 /// reads can go out of step with the header unnoticed.
 ///
 /// # Safety
@@ -119,7 +123,7 @@ pub unsafe extern "C" fn xpui_screen_render(handle: *mut c_void) {
     unsafe { with(handle, |driver| driver.render()) }
 }
 
-/// Offers the system home gesture. Returns non-zero when the screen took it.
+/// Offers the system home gesture, answering non-zero when the screen took it.
 ///
 /// # Safety
 /// `handle` must be null or a live handle from [`into_handle`] or
@@ -132,7 +136,7 @@ pub unsafe extern "C" fn xpui_screen_home_gesture(handle: *mut c_void) -> u8 {
     u8::from(claimed)
 }
 
-/// Drops the screen. The handle is dangling afterwards.
+/// Drops the screen, leaving the handle dangling.
 ///
 /// # Safety
 /// `handle` must be null, or a handle from [`into_handle`] or [`handle_for`]
