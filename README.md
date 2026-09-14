@@ -96,7 +96,7 @@ than through whoever happens to sit above it.
 flowchart TD
   xpui["xpui<br/>the framework"]
   chrome["xpui-chrome<br/>components"]
-  boards["xpui-boards<br/>seven devices"]
+  boards["xpui-boards<br/>eight devices"]
   backends["xpui-backends<br/>two backends"]
   simulator["xpui-simulator<br/>a window"]
   gallery["xpui-gallery<br/>the app"]

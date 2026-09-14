@@ -121,8 +121,8 @@ test it ships with. Look for what the diff *stopped* doing:
 - A blessed snapshot. **`UPDATE_SNAPSHOTS=1` followed by a commit is how a
   regression becomes the expected output** — if a golden file moved, the diff
   must be explained, and "it looked right" is not an explanation.
-- **One board out of seven.** A change that touches layout, chrome or keys has
-  to be right on all seven, and no crate below the application knows more than
+- **One board out of eight.** A change that touches layout, chrome or keys has
+  to be right on all eight, and no crate below the application knows more than
   one vendor — so a test that walks every board lives in the conformance suite
   in `xpui-gallery`, and a test pinned to one board is a finding. A per-board
   regression passes a green suite: that is how a change to what two boards
@@ -150,7 +150,7 @@ a mutation needs the workspace to show its effect, that is itself worth
 reporting — it means the change reaches further than its diff suggests.
 
 **Never narrow a check to fewer boards or fewer targets to save time.** The
-seven-board screenshot suite and the bare-metal clippy runs each take seconds,
+eight-board screenshot suite and the bare-metal clippy runs each take seconds,
 and the per-board regression is the one this codebase has actually shipped.
 
 Report which commands you ran. A review that says "the suite is green" without

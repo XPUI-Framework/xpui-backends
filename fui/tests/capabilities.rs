@@ -38,11 +38,12 @@ static WITHOUT_PAIR: Device = Device { left_right: false };
 
 /// The backend reports what the firmware said, both ways round.
 ///
-/// The four boards CrossPoint drives disagree — the X3's and the X4's footers
-/// send Left and Right, while the X4 Pro takes them from its touchscreen and
-/// the Sticky spends its three keys on confirm and a page pair — so a backend
-/// answering a constant would be wrong on two of them whichever constant it
-/// picked, and no test that drove only one answer would notice.
+/// The five boards CrossPoint drives disagree — the X3's, the X4's and the X4
+/// Classic's footers send Left and Right, while the X4 Pro takes them from its
+/// touchscreen and the Sticky spends its three keys on confirm and a page pair
+/// — so a backend answering a constant would be wrong on at least two of them
+/// whichever constant it picked, and no test that drove only one answer would
+/// notice.
 #[test]
 fn the_backend_reports_what_the_firmware_says() {
     let with_pair: Backend<Device> = Backend::new(&WITH_PAIR);

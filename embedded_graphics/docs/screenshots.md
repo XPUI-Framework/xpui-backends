@@ -39,7 +39,7 @@ That is how this crate's own tests work — see `tests/screenshots.rs`.
 many frames and wants to name every one that moved rather than stopping at the
 first. A broken harness — a golden that will not decode, a directory that will
 not take a file — still panics through either of them.
-[`xpui-gallery`'s `gallery/`](https://github.com/XPUI-Framework/xpui-gallery/tree/main/gallery) renders nine screens on seven
+[`xpui-gallery`'s `gallery/`](https://github.com/XPUI-Framework/xpui-gallery/tree/main/gallery) renders ten screens on eight
 boards that way, so one token moved by one pixel names every board it reached
 rather than the first.
 
