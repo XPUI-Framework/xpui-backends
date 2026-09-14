@@ -212,4 +212,9 @@ unsafe extern "C" {
     // -- display ------------------------------------------------------------
     /// Asks the panel to show what has been drawn.
     pub safe fn xpui_fui_request_update();
+    // `xpui_fui_present` and `xpui_fui_set_present` are in the header and not
+    // here, on purpose. They are the firmware's end of the call above: a
+    // firmware overrides the first or hands its push to the second, and the
+    // shim calls whichever it was given. Nothing in Rust calls either, and
+    // `tests/abi.rs` leaves both out of the comparison for that reason.
 }

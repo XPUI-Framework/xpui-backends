@@ -6,9 +6,9 @@ already own your panel?
 ## No — I have a `DrawTarget`
 
 Take [`xpui-embedded-graphics`](../embedded_graphics/). It draws every pixel
-itself through any `embedded-graphics` `DrawTarget` — a driver crate for an
+itself through any [`embedded-graphics`](https://crates.io/crates/embedded-graphics) `DrawTarget` — a driver crate for an
 e-paper panel, an OLED over SPI, a colour TFT, the desktop simulator's window.
-It supplies `Canvas` and `TextMetrics` from the u8g2 faces it ships, takes
+It supplies `Canvas` and `TextMetrics` from the [u8g2](https://github.com/olikraus/u8g2) faces it ships, takes
 `Chrome` from `xpui-chrome`, and takes `InputSource` and `Clock` from whatever
 you feed it. Nothing else has to exist: a bare-metal firmware with a panel
 driver and a button poll is a complete host.
@@ -19,7 +19,7 @@ of two colours maps ink and background onto whatever the panel takes.
 ## Yes — a C++ firmware draws through FreeInkUI
 
 Take [`xpui-fui`](../fui/). A firmware that already owns the screen and paints
-its own screens through FreeInkUI has a component library that knows what a
+its own screens through [FreeInkUI](https://github.com/Free-Ink/freeink-sdk/tree/main/libs/ui/FreeInkUI) has a component library that knows what a
 list row, a dialog and a slider look like. The backend calls that library over
 a C ABI, so a Rust screen and a native one come out as the same pixels, in the
 user's theme, with no second drawing path. The firmware supplies input and the

@@ -2,7 +2,7 @@
 
 The type a backend is set in: which family each role resolves through, the
 sizes a family was cut in, and how a string is split into the faces that
-actually draw it. The faces are U8g2's bitmaps, read from flash a glyph at a
+actually draw it. The faces are [U8g2](https://github.com/olikraus/u8g2)'s bitmaps, read from flash a glyph at a
 time, so nothing is scaled at run time and nothing allocates.
 
 [`design.md`](../design.md#type) says why a role names a size rather than a
@@ -306,7 +306,7 @@ and no fallback.
 
 > [!NOTE]
 > These faces are not this repository's to license. The bitmaps descend from
-> the X11 distribution under Adobe's and Digital's notices, and anything
+> the [X11](https://www.x.org/) distribution under Adobe's and Digital's notices, and anything
 > shipping this backend ships those too:
 > <https://github.com/olikraus/u8g2/blob/master/LICENSE>.
 
@@ -324,7 +324,7 @@ font_tier!(line_height, RegularFace, BoldFace)
 
 It expands to a `Tier` whose id is [`font_id`](#xpui_egfont_id) over both
 faces' bytes, with no italic. Every path in it goes through this crate, so a
-caller needs no dependency on `u8g2-fonts` of its own. The line height is
+caller needs no dependency on [`u8g2-fonts`](https://crates.io/crates/u8g2-fonts) of its own. The line height is
 declared, not measured: give the taller of the two faces. See
 [the example under `Family`](#xpui_egfamily).
 

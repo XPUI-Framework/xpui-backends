@@ -1,6 +1,6 @@
-# Backend
+# The FreeInkUI backend
 
-The Rust half of the FreeInkUI backend: the host a firmware installs, the
+The Rust half of the [FreeInkUI](https://github.com/Free-Ink/freeink-sdk/tree/main/libs/ui/FreeInkUI) backend: the host a firmware installs, the
 platform trait it supplies input and the clock through, the call that points
 the C++ half at a framebuffer, and the macro that exports a screen for a C++
 host to create.

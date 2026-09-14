@@ -67,10 +67,14 @@ impl<D: DrawTarget> Canvas for Backend<D> {
         self.frame.with_ref(|frame| frame.size)
     }
 
+    /// Fills the whole panel with the background, and ignores any clip.
+    ///
+    /// Straight to the display rather than through the clip every other
+    /// primitive here draws through: clearing is a whole-screen act, and the
+    /// framework calls it before anything else in a frame is drawn. A clip set
+    /// at the time narrows nothing.
     fn clear(&self) {
         let background = self.palette.background;
-        // Straight through, ignoring the clip: clearing is a whole-screen act,
-        // and the framework only calls it before anything else is drawn.
         self.frame.with(|frame| {
             if let Some(display) = frame.display.as_mut() {
                 let _ = display.clear(background);

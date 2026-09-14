@@ -2,9 +2,9 @@
 
 # `xpui-embedded-graphics`
 
-An [`xpui`](https://github.com/XPUI-Framework/xpui-framework) backend that draws through any `embedded-graphics`
+An [`xpui`](https://github.com/XPUI-Framework/xpui-framework) backend that draws through any [`embedded-graphics`](https://crates.io/crates/embedded-graphics)
 `DrawTarget` — which is most of the embedded Rust display ecosystem: e-paper
-panels, SSD1306 and friends, colour TFTs, and the desktop simulator.
+panels, [SSD1306](https://www.solomon-systech.com/product/ssd1306) and friends, colour TFTs, and the desktop simulator.
 
 ## Using it
 

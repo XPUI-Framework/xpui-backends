@@ -1,6 +1,6 @@
 # Hardware notes
 
-What running the `embedded-graphics` backend on real panels established, kept
+What running the [`embedded-graphics`](https://crates.io/crates/embedded-graphics) backend on real panels established, kept
 here so the code can state the conclusion in a sentence.
 
 ## Solid fills on a parallel bus: why `PacedFill` exists
@@ -8,7 +8,7 @@ here so the code can state the conclusion in a sentence.
 An 8080-style parallel panel latches a byte on the rising edge of its write
 strobe, and the controller has a minimum write *cycle* — 66 ns on the
 ST7789v — that the strobe has to respect. When every pixel of a run has the
-same byte in both halves, `mipidsi` sends the word once and then loops on
+same byte in both halves, [`mipidsi`](https://crates.io/crates/mipidsi) sends the word once and then loops on
 the strobe alone:
 
 ```text
@@ -16,7 +16,7 @@ wr.set_low();
 wr.set_high();
 ```
 
-Two register stores. On a 125 MHz RP2040 in release that is a write cycle of
+Two register stores. On a 125 MHz [RP2040](https://www.raspberrypi.com/products/rp2040/) in release that is a write cycle of
 roughly 24–40 ns — inside the controller's minimum, so it mislatches, and the
 fill arrives as noise.
 

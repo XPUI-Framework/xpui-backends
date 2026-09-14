@@ -1,8 +1,8 @@
 # Adding the shim to a firmware
 
 `cpp/xpui_fui.cpp` implements the C ABI in `cpp/xpui_fui.h` against the
-FreeInk SDK's UI library. It binds to `freeink::ui::DisplayTarget`, which needs
-nothing but a raw 1-bit framebuffer and ships its own Noto Sans bitmap font, so
+[FreeInk SDK](https://github.com/Free-Ink/freeink-sdk)'s UI library. It binds to `freeink::ui::DisplayTarget`, which needs
+nothing but a raw 1-bit framebuffer and ships its own [Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans) bitmap font, so
 the file is firmware-agnostic: any board that can hand over a framebuffer can
 host `xpui`. This page is the whole of what a firmware does with it.
 
@@ -18,7 +18,7 @@ You compile two sources and add one include path:
 
 | | |
 | --- | --- |
-| sources | `xpui_fui.cpp`, plus FreeInkUI's own `src/FreeInkUI.cpp` |
+| sources | `xpui_fui.cpp`, plus [FreeInkUI](https://github.com/Free-Ink/freeink-sdk/tree/main/libs/ui/FreeInkUI)'s own `src/FreeInkUI.cpp` |
 | includes | `<freeink-sdk>/libs/ui/FreeInkUI/include`, and `cpp/`, where the header is |
 | standard | C++17 or later; `-fno-exceptions` and `-fno-rtti` are fine |
 
@@ -26,7 +26,7 @@ FreeInkUI is otherwise header-only, but `src/FreeInkUI.cpp` holds the default
 styles, the theme tokens and the list/layout helpers this file calls, so it has
 to be in the link.
 
-PlatformIO, with the SDK already in `lib_deps`:
+[PlatformIO](https://platformio.org/), with the SDK already in `lib_deps`:
 
 ```ini
 build_flags =
@@ -37,7 +37,7 @@ build_src_filter =
   +<../xpui-backends/fui/cpp/xpui_fui.cpp>
 ```
 
-CMake:
+[CMake](https://cmake.org/):
 
 ```cmake
 target_sources(firmware PRIVATE

@@ -6,12 +6,12 @@
 `cargo build` on a fresh clone installs what it needs. The Rust half builds
 and tests with nothing else; the C++ half has two requirements:
 
-- **clang-format 21 or newer, and it is not optional.** `C++ format` is the
+- **[clang-format](https://clang.llvm.org/docs/ClangFormat.html) 21 or newer, and it is not optional.** `C++ format` is the
   gate's second stage and fails outright when no binary is found; older
   releases silently ignore options in `.clang-format` and hand back a
   differently formatted file, so it refuses those rather than trusting them.
   `.clang-format` is the firmware's own and is not edited here.
-- **The FreeInkUI headers, which are optional.** `the shim compiles` and
+- **The [FreeInkUI](https://github.com/Free-Ink/freeink-sdk/tree/main/libs/ui/FreeInkUI) headers, which are optional.** `the shim compiles` and
   `documented C++ compiles` skip with a note when there are none, and fail
   instead when `CI` is set. The gate
   takes `FREEINK_SDK_INCLUDE` if it is set; otherwise it looks in

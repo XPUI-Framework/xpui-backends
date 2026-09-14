@@ -2,16 +2,16 @@
 
 # xpui on FreeInkUI
 
-`xpui_fui.cpp` implements the C ABI in `xpui_fui.h` against the FreeInk SDK's
+`xpui_fui.cpp` implements the C ABI in `xpui_fui.h` against the [FreeInk SDK](https://github.com/Free-Ink/freeink-sdk)'s
 UI library. It binds to `freeink::ui::DisplayTarget`, which needs nothing but a
-raw 1-bit framebuffer and ships its own Noto Sans bitmap font, so this file is
+raw 1-bit framebuffer and ships its own [Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans) bitmap font, so this file is
 firmware-agnostic: any board that can hand over a framebuffer can host xpui.
 
 ## Using it
 
 The header is the contract. It, `../src/raw.rs`, this file and the Rust
 doubles move together. A firmware compiles two sources — `xpui_fui.cpp` and
-FreeInkUI's own `src/FreeInkUI.cpp` — with `<freeink-sdk>/libs/ui/FreeInkUI/include`
+[FreeInkUI](https://github.com/Free-Ink/freeink-sdk/tree/main/libs/ui/FreeInkUI)'s own `src/FreeInkUI.cpp` — with `<freeink-sdk>/libs/ui/FreeInkUI/include`
 and this directory on the include path, C++17 or later. Two calls at startup
 wire it up: `xpui_fui_attach` with the panel's framebuffer, and
 `xpui_fui_set_present` with the function that pushes a frame.

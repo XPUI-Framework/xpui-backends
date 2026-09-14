@@ -25,11 +25,11 @@ of replacement glyphs. Which family, and how to bring your own, is
 board that scales its chrome up gets type to match: 30 pixels of interface text
 on a reader, 39 once a touch board's scale is applied, 18 on a 296x128 strip.
 On a 218-ppi panel that 30 is **3.5mm** of glass. The mono faces
-`embedded-graphics` ships stop at `FONT_10X20`, which is 2.3mm on the same
+[`embedded-graphics`](https://crates.io/crates/embedded-graphics) ships stop at `FONT_10X20`, which is 2.3mm on the same
 panel.
 
-The bitmaps live in flash — 27 KB of `.rodata` in a Badger 2040 build, and not
-one byte of RAM. They are also not this repository's to license: see U8g2's
+The bitmaps live in flash — 27 KB of `.rodata` in a [Badger 2040](https://shop.pimoroni.com/products/badger-2040) build, and not
+one byte of RAM. They are also not this repository's to license: see [U8g2](https://github.com/olikraus/u8g2)'s
 [LICENSE](https://github.com/olikraus/u8g2/blob/master/LICENSE) for the
 foundries' notices.
 

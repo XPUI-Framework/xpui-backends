@@ -1,4 +1,4 @@
-# Lifecycle
+# A screen's lifecycle over C
 
 How a C++ host that owns its own screen stack drives an `xpui` screen: it holds
 the screen as an opaque handle and calls six `extern "C"` entry points, which

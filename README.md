@@ -34,7 +34,7 @@ flowchart TD
 | | |
 |---|---|
 | [`embedded_graphics`](embedded_graphics/) | You have a `DrawTarget` — a driver crate, a display over SPI, a simulator window. The backend draws every pixel itself, through [`xpui-chrome`](https://github.com/XPUI-Framework/xpui-chrome) |
-| [`fui`](fui/) | A **C++ firmware** already owns the screen and draws through FreeInkUI. This one calls that library over a C ABI, so a Rust screen comes out pixel-identical to a native one |
+| [`fui`](fui/) | A **C++ firmware** already owns the screen and draws through [FreeInkUI](https://github.com/Free-Ink/freeink-sdk/tree/main/libs/ui/FreeInkUI). This one calls that library over a C ABI, so a Rust screen comes out pixel-identical to a native one |
 | [`screenshot`](screenshot/) | A framebuffer and golden-image comparison, for testing what a backend actually painted. Host only |
 | [`abi-check`](abi-check/) | Parses a C header and the Rust that declares it and compares **signatures**. Two swapped parameters link fine — C has no mangling to disagree with — and the result is a corrupt call frame |
 
@@ -59,12 +59,12 @@ depend on [`xpui`](https://github.com/XPUI-Framework/xpui-framework), and the
 `embedded_graphics` backend on [`xpui-chrome`](https://github.com/XPUI-Framework/xpui-chrome)
 for its themed components. **No boards crate**, by design: a backend takes its
 measurements from whoever wires it and has no idea what a device is. Nothing
-is on crates.io yet, which is why the dependency above is a `git` URL.
+is on [crates.io](https://crates.io/) yet, which is why the dependency above is a `git` URL.
 
 ## Requirements
 
 A Rust toolchain for everything but `fui`'s C++ half, which needs two more
-things. **clang-format 21 or newer is required**: the gate's second stage
+things. **[clang-format](https://clang.llvm.org/docs/ClangFormat.html) 21 or newer is required**: the gate's second stage
 fails without it, and refuses an older one rather than trusting it. **The
 FreeInkUI headers are optional**: the gate takes `FREEINK_SDK_INCLUDE` when
 it is set, otherwise looks beside the checkout, and skips the shim's two

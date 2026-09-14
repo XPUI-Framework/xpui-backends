@@ -27,7 +27,7 @@ A plain 1-bit framebuffer implementing [`DrawTarget`](https://docs.rs/embedded-g
 pub struct Framebuffer
 ```
 
-An `embedded-graphics` `DrawTarget` like any other, with `BinaryColor` and no
+An [`embedded-graphics`](https://crates.io/crates/embedded-graphics) `DrawTarget` like any other, with `BinaryColor` and no
 window or hardware, so a backend needs no knowledge of it: point one at this
 instead of a panel and the same drawing lands where a test can read it. Not
 `MockDisplay`, which is 64x64 and rejects overdraw, where a dither or a scrim

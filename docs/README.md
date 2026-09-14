@@ -5,7 +5,7 @@ repository, and what each is for:
 
 | | |
 |---|---|
-| [choosing-a-backend.md](choosing-a-backend.md) | when `embedded_graphics`, when FreeInkUI, and what a third would need |
+| [choosing-a-backend.md](choosing-a-backend.md) | when `embedded_graphics`, when [FreeInkUI](https://github.com/Free-Ink/freeink-sdk/tree/main/libs/ui/FreeInkUI), and what a third would need |
 | [contributing.md](contributing.md) | building it, the gate, the five review steps, and how a commit is written |
 | [embedded_graphics/docs/reference.md](../embedded_graphics/docs/reference.md) | the `xpui-embedded-graphics` reference: its index |
 | [embedded_graphics/docs/reference/backend.md](../embedded_graphics/docs/reference/backend.md) | `Backend`, `DisplayLoan`, `InputState`, `PacedFill`, `Palette` |

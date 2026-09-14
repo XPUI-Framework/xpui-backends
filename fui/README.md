@@ -2,7 +2,7 @@
 
 # `xpui-fui`
 
-An [`xpui`](https://github.com/XPUI-Framework/xpui-framework) backend that draws through **FreeInkUI**.
+An [`xpui`](https://github.com/XPUI-Framework/xpui-framework) backend that draws through **[FreeInkUI](https://github.com/Free-Ink/freeink-sdk/tree/main/libs/ui/FreeInkUI)**.
 
 FreeInkUI is a header-only C++ component library for e-ink firmware. It already
 knows what a list row, a dialog and a slider look like — so a screen written
@@ -40,8 +40,8 @@ unsafe { xpui::host::install(&BACKEND) };
 
 A firmware compiles two sources, `cpp/xpui_fui.cpp` and FreeInkUI's own
 `src/FreeInkUI.cpp`, with FreeInkUI's include directory on the path —
-[`docs/firmware.md`](docs/firmware.md) has the lines for PlatformIO and for
-CMake. `Platform` is the one thing this crate
+[`docs/firmware.md`](docs/firmware.md) has the lines for [PlatformIO](https://platformio.org/) and for
+[CMake](https://cmake.org/). `Platform` is the one thing this crate
 cannot supply: whatever drives the panel already knows whether a button was
 pressed, so it implements those five methods and the backend forwards to it.
 

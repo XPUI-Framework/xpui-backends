@@ -2,7 +2,7 @@
 
 [The README](../README.md) says how to wire this backend up, and
 [`cpp/README.md`](../cpp/README.md) how to build the C++ half into a firmware.
-This is the part neither covers: why sitting *on* FreeInkUI is a small change
+This is the part neither covers: why sitting *on* [FreeInkUI](https://github.com/Free-Ink/freeink-sdk/tree/main/libs/ui/FreeInkUI) is a small change
 rather than a rewrite, and what that buys.
 
 ## Two libraries that arrived at the same shapes
@@ -126,7 +126,7 @@ directions.
 
 The C++ half binds to `freeink::ui::DisplayTarget`, which is dependency-free
 and takes a plain 1-bit framebuffer. It is deliberately *not* written against
-any particular firmware's renderer, so any project linking the FreeInk SDK can
+any particular firmware's renderer, so any project linking the [FreeInk SDK](https://github.com/Free-Ink/freeink-sdk) can
 add these two files and be done. A firmware with its own themed renderer can
 implement the same ABI itself instead — that is a supported path, not a fork.
 

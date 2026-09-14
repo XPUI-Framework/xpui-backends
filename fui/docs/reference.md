@@ -12,11 +12,11 @@ Each page lists every public name in its area with its declaration, examples
 you can copy, and what it does. The gate checks every page against the code,
 so what a page says an item is, the compiler agrees with.
 
-| Page | Holds |
-|---|---|
-| [backend](reference/backend.md) | `Backend`, `Platform`, `NoInput`, `attach`, `register_screen!`, and which FreeInkUI component draws each piece of chrome |
-| [lifecycle](reference/lifecycle.md) | the `lifecycle` module: the opaque handle a C++ host drives a screen through, and its six `extern "C"` entry points |
-| [raw](reference/raw.md) | the `raw` module: every function of the C ABI the Rust half draws through, and `CellFn` |
+| Group | Page | Holds |
+|---|---|---|
+| Host | [backend](reference/backend.md) | `Backend`, `Platform`, `NoInput`, `attach`, `register_screen!`, and which [FreeInkUI](https://github.com/Free-Ink/freeink-sdk/tree/main/libs/ui/FreeInkUI) component draws each piece of chrome |
+| The C boundary | [lifecycle](reference/lifecycle.md) | the `lifecycle` module: the opaque handle a C++ host drives a screen through, and its six `extern "C"` entry points |
+| | [raw](reference/raw.md) | the `raw` module: every function of the C ABI the Rust half draws through, and `CellFn` |
 
 Every `rust` block on these pages is compiled and run by the gate's doctests,
 against the host doubles the `testing` feature supplies in place of the C++

@@ -1,7 +1,7 @@
 # FreeInkUI coverage
 
 `xpui` asks a backend for eight pieces of themed furniture. This is what answers
-each of them, what FreeInkUI has no component for, and what it ships that
+each of them, what [FreeInkUI](https://github.com/Free-Ink/freeink-sdk/tree/main/libs/ui/FreeInkUI) has no component for, and what it ships that
 nothing here calls yet.
 
 One rule decides every row below:

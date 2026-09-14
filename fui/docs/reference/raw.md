@@ -1,7 +1,7 @@
-# Raw
+# The C drawing functions
 
 The C ABI the Rust half draws through, in one module. Every function here is
-implemented by `cpp/xpui_fui.cpp` against FreeInkUI and declared for C in
+implemented by `cpp/xpui_fui.cpp` against [FreeInkUI](https://github.com/Free-Ink/freeink-sdk/tree/main/libs/ui/FreeInkUI) and declared for C in
 `cpp/xpui_fui.h`; the `testing` feature swaps in host doubles, so the Rust
 half's tests link with no firmware. A screen never calls these:
 [`Backend`](backend.md#xpui_fuibackend) does. They are listed for a firmware
@@ -55,6 +55,13 @@ The framebuffer is 1 bit per pixel, MSB first, `(width + 7) / 8` bytes per
 row, and a **set bit is white**: FreeInkUI's convention, the inverse of the
 usual one. How `xpui_fui_request_update` reaches the glass, a hook or a weak
 symbol, is in [firmware.md](../firmware.md#wiring-it-up).
+
+`xpui_fui_set_present` and `xpui_fui_present` are declared in the header and
+**not in this module, on purpose**. They are the firmware's end of
+`xpui_fui_request_update`: a firmware installs its push with the first at
+startup, or overrides the second, and the shim calls whichever it has. Rust
+never calls either, so neither has a declaration here, and the ABI test leaves
+both out of its comparison.
 
 ## Canvas
 

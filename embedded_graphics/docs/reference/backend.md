@@ -1,6 +1,6 @@
-# Backend
+# The embedded-graphics backend
 
-The host itself: a `Backend` over any `embedded-graphics` `DrawTarget`, the
+The host itself: a `Backend` over any [`embedded-graphics`](https://crates.io/crates/embedded-graphics) `DrawTarget`, the
 input a caller feeds it each frame, the two colours ink and background land
 as, and the wrapper a parallel-bus panel needs. Everything a screen draws goes
 through one of these, and everything it hears about buttons and fingers comes
@@ -35,6 +35,10 @@ pub struct Backend<D: DrawTarget>
 and `Chrome` from `xpui-chrome`, so a list, a dialog and a slider look like
 something without anyone drawing one.
 
+**`Canvas::clear` fills the whole panel and ignores any clip.** It writes the
+background straight to the display, however small a clip is set at the time;
+every other primitive draws through the clip.
+
 | Builder | Sets | When not called |
 |---|---|---|
 | [`with_metrics`](#xpui_egbackendwith_metrics) | the measurements chrome is painted to | `Metrics::DEFAULT` |
@@ -50,7 +54,7 @@ the pixels with [`with_display`](#xpui_egbackendwith_display) or
 [`loan_display`](#xpui_egbackendloan_display).
 
 > [!WARNING]
-> Without the `critical-section` feature the backend's state is a bare
+> Without the [`critical-section`](https://crates.io/crates/critical-section) feature the backend's state is a bare
 > `RefCell`, so it must be driven from one thread. A host that paints on a
 > second task turns the feature on.
 
@@ -550,7 +554,7 @@ pub struct PacedFill<D>(D)
 ```
 
 **Wrap a parallel-bus panel in `PacedFill`.** An 8080-style parallel panel
-driven through `mipidsi` shortens a run of one colour into a loop on the write
+driven through [`mipidsi`](https://crates.io/crates/mipidsi) shortens a run of one colour into a loop on the write
 strobe alone, and on a fast microcontroller that loop outruns the controller's
 minimum write cycle, so the fill lands as noise. It triggers whenever a pixel's
 two bytes are identical, and ink and background are two such colours, so every
@@ -651,7 +655,7 @@ Ink is `Off`.
 pub const INK_IS_OFF: Self = Palette
 ```
 
-Some 1-bit panels invert: `uc8151`, the Badger 2040's controller, maps `Off` to
+Some 1-bit panels invert: [`uc8151`](https://crates.io/crates/uc8151), the [Badger 2040](https://shop.pimoroni.com/products/badger-2040)'s controller, maps `Off` to
 black so bitmaps load unmirrored.
 
 ## Re-exports
