@@ -160,7 +160,7 @@ dependencies = [
 [[package]]
 name = "xpui"
 version = "0.1.0"
-source = "git+https://github.com/XPUI-Framework/xpui-framework?branch=main#d3d63d5d302786a2ac73f196e4adbcf88e258461"
+source = "git+https://github.com/XPUI-Framework/xpui-framework?branch=main#3f8a617618e6f364d08da1455e84129a85cd8455"
 
 [[package]]
 name = "xpui-abi-check"
@@ -169,7 +169,7 @@ version = "0.1.0"
 [[package]]
 name = "xpui-chrome"
 version = "0.1.0"
-source = "git+https://github.com/XPUI-Framework/xpui-chrome?branch=main#951cb0333a7616b74fc210ceb15506c3a55a422c"
+source = "git+https://github.com/XPUI-Framework/xpui-chrome?branch=main#2dae85999fe3e245ee62ff1d708e568951ba0e16"
 dependencies = [
  "xpui",
 ]
