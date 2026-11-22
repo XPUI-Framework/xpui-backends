@@ -72,10 +72,3 @@ opt-level = "s"
 lto = true
 codegen-units = 1
 panic = "abort"
-
-# TEMPORARY, do not commit: the local xpui and xpui-chrome checkouts, carrying
-# the static-host and component work until it is pushed.
-[patch."https://github.com/XPUI-Framework/xpui-framework"]
-xpui = { path = "../xpui" }
-[patch."https://github.com/XPUI-Framework/xpui-chrome"]
-xpui-chrome = { path = "../xpui-chrome" }
