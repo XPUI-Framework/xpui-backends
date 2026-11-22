@@ -110,20 +110,23 @@ const COMMENT_SCOPE: Option<&str> = None;
 /// `xpui_abi_check` is not listed: it is tooling for this gate, and `AGENTS.md`
 /// says why.
 const REFERENCE: Option<reference::Reference> = Some(reference::Reference {
-    crates: &["xpui_eg", "xpui_fui", "xpui_screenshot"],
+    crates: &["xpui_dessen", "xpui_eg", "xpui_fui", "xpui_screenshot"],
     pages: "*/docs/reference*.md",
     complete: true,
     exempt: &[],
 });
 
-/// Bare-metal targets the two backends are linted for.
-const BARE_METAL: [(&str, bool); 2] = [
-    ("riscv32imc-unknown-none-elf", true),
-    ("thumbv6m-none-eabi", false),
+/// Bare-metal targets the backends are linted for, whether each is required,
+/// and which backends each compiles. `xpui-dessen` runs only on the dessen VM,
+/// which decodes no compressed instructions, so it has a target of its own.
+const BARE_METAL: [(&str, bool, &[&str]); 3] = [
+    ("riscv32imc-unknown-none-elf", true, &LINT_CRATES),
+    ("thumbv6m-none-eabi", false, &LINT_CRATES),
+    ("riscv32im-unknown-none-elf", true, &["-p", "xpui-dessen"]),
 ];
 
-/// What the bare-metal runs compile. `xpui-screenshot` is host-only and
-/// `xpui-abi-check` is a build-time tool, so neither belongs here.
+/// What the first two bare-metal runs compile. `xpui-screenshot` is host-only
+/// and `xpui-abi-check` is a build-time tool, so neither belongs here.
 const LINT_CRATES: [&str; 4] = ["-p", "xpui-embedded-graphics", "-p", "xpui-fui"];
 
 /// The feature the host tests need: the FreeInkUI backend's doubles, so a host
@@ -333,7 +336,7 @@ fn tests() -> Result<String, String> {
 /// second is a second architecture rather than a stricter one.
 fn bare_metal(notes: &mut Vec<String>) -> Result<(), String> {
     {
-        for (triple, required) in BARE_METAL {
+        for (triple, required, crates) in BARE_METAL {
             {
                 if !cargo::target_installed(triple) {
                     {
@@ -350,10 +353,22 @@ fn bare_metal(notes: &mut Vec<String>) -> Result<(), String> {
                     }
                 }
                 let mut arguments = vec!["clippy", "--release"];
-                arguments.extend_from_slice(&LINT_CRATES);
+                arguments.extend_from_slice(crates);
                 arguments.extend_from_slice(&["--target", triple, "--", "-D", "warnings"]);
                 cargo::cargo(&arguments)?;
                 notes.push(triple.to_string());
+                // Every dessen app links its host (`--cfg xpui_static_host`),
+                // a path no other build compiles: lint it as the apps build it,
+                // in a target directory of its own so the two do not keep
+                // invalidating each other.
+                if triple == "riscv32im-unknown-none-elf" {
+                    let mut linked =
+                        vec!["clippy", "--release", "--target-dir", "target/static-host"];
+                    linked.extend_from_slice(crates);
+                    linked.extend_from_slice(&["--target", triple, "--", "-D", "warnings"]);
+                    cargo::cargo_with_rustflags("--cfg xpui_static_host", &linked)?;
+                    notes.push(format!("{triple} with xpui_static_host"));
+                }
             }
         }
         Ok(())

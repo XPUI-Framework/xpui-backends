@@ -16,6 +16,26 @@ pub fn cargo(arguments: &[&str]) -> Result<String, String> {
     }
 }
 
+/// [`cargo`], with `RUSTFLAGS` set for the build it starts.
+pub fn cargo_with_rustflags(rustflags: &str, arguments: &[&str]) -> Result<String, String> {
+    let status = Command::new(env!("CARGO"))
+        .args(arguments)
+        .env("RUSTFLAGS", rustflags)
+        .status()
+        .map_err(|e| format!("could not run cargo: {e}"))?;
+    if status.success() {
+        Ok(format!(
+            "RUSTFLAGS='{rustflags}' cargo {}",
+            arguments.join(" ")
+        ))
+    } else {
+        Err(format!(
+            "RUSTFLAGS='{rustflags}' cargo {} failed",
+            arguments.join(" ")
+        ))
+    }
+}
+
 /// Every package in this repository, by name.
 ///
 /// From the manifests rather than `cargo metadata`: metadata gives every

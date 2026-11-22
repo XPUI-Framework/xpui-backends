@@ -13,7 +13,8 @@
 channel = "1.97.1"
 components = ["rustfmt", "clippy"]
 
-# The ESP32-C3, and the RP2040's Cortex-M0+. Listing them here means rustup
-# installs both on the first cargo call, so a new contributor does not need to
-# know the triples.
-targets = ["riscv32imc-unknown-none-elf", "thumbv6m-none-eabi"]
+# The ESP32-C3, the RP2040's Cortex-M0+, and the dessen VM, which decodes no
+# compressed instructions and so needs `riscv32im` rather than `imc`. Listing
+# them here means rustup installs all three on the first cargo call, so a new
+# contributor does not need to know the triples.
+targets = ["riscv32imc-unknown-none-elf", "thumbv6m-none-eabi", "riscv32im-unknown-none-elf"]

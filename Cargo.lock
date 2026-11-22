@@ -54,6 +54,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
 
 [[package]]
+name = "dessen"
+version = "0.1.0"
+
+[[package]]
 name = "embedded-graphics"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -160,7 +164,6 @@ dependencies = [
 [[package]]
 name = "xpui"
 version = "0.1.0"
-source = "git+https://github.com/XPUI-Framework/xpui-framework?branch=main#d3d63d5d302786a2ac73f196e4adbcf88e258461"
 
 [[package]]
 name = "xpui-abi-check"
@@ -169,9 +172,17 @@ version = "0.1.0"
 [[package]]
 name = "xpui-chrome"
 version = "0.1.0"
-source = "git+https://github.com/XPUI-Framework/xpui-chrome?branch=main#951cb0333a7616b74fc210ceb15506c3a55a422c"
 dependencies = [
  "xpui",
+]
+
+[[package]]
+name = "xpui-dessen"
+version = "0.1.0"
+dependencies = [
+ "dessen",
+ "xpui",
+ "xpui-chrome",
 ]
 
 [[package]]

@@ -11,11 +11,11 @@
 > Under heavy development. Not production-ready. The API can break without
 > notice. Use at your own risk.
 
-The two things that put `xpui` pixels on a panel, and the two helpers they
+The three things that put `xpui` pixels on a panel, and the two helpers they
 need. A backend answers five traits — `Canvas`, `TextMetrics`, `Chrome`,
 `InputSource`, `Clock` — and the framework calls nothing else; in practice you
 write four, because `Chrome` comes from a macro, and the sixth trait a running
-screen needs, `Navigator`, is the application's. Which of the two backends you
+screen needs, `Navigator`, is the application's. Which of the three backends you
 want depends on one question: **does something already own your panel?**
 
 Every document in this repository is listed in [docs/README.md](docs/README.md).
@@ -27,6 +27,8 @@ flowchart TD
   q{"Does something<br/>already own your panel?"}
   q -- "No — I have a DrawTarget" --> eg["embedded_graphics<br/>draws every pixel itself"]
   q -- "Yes — a C++ firmware<br/>draws through FreeInkUI" --> fui["fui<br/>calls that library over a C ABI"]
+  q -- "Yes — and my code is<br/>a sandboxed dessen app" --> dessen["dessen<br/>draws through its system calls"]
+  dessen --> chrome
   eg --> chrome["xpui-chrome<br/>paints the components"]
   fui --> abi["your firmware's<br/>own renderer"]
 ```
@@ -35,6 +37,7 @@ flowchart TD
 |---|---|
 | [`embedded_graphics`](embedded_graphics/) | You have a `DrawTarget` — a driver crate, a display over SPI, a simulator window. The backend draws every pixel itself, through [`xpui-chrome`](https://github.com/XPUI-Framework/xpui-chrome) |
 | [`fui`](fui/) | A **C++ firmware** already owns the screen and draws through [FreeInkUI](https://github.com/Free-Ink/freeink-sdk/tree/main/libs/ui/FreeInkUI). This one calls that library over a C ABI, so a Rust screen comes out pixel-identical to a native one |
+| [`dessen`](dessen/) | Your code is a **dessen app**: a small sandboxed RV32IM binary a CrossPoint or FreeInk firmware launches from the SD card. The backend draws through dessen's system calls, which the firmware forwards to FreeInkUI, and one `app.bin` runs on every board |
 | [`screenshot`](screenshot/) | A framebuffer and golden-image comparison, for testing what a backend actually painted. Host only |
 | [`abi-check`](abi-check/) | Parses a C header and the Rust that declares it and compares **signatures**. Two swapped parameters link fine — C has no mangling to disagree with — and the result is a corrupt call frame |
 
@@ -48,12 +51,14 @@ at length, and what a third backend would need.
 xpui-embedded-graphics = { git = "https://github.com/XPUI-Framework/xpui-backends", branch = "main" }
 # or
 xpui-fui = { git = "https://github.com/XPUI-Framework/xpui-backends", branch = "main" }
+# or
+xpui-dessen = { git = "https://github.com/XPUI-Framework/xpui-backends", branch = "main" }
 
 [dev-dependencies]
 xpui-screenshot = { git = "https://github.com/XPUI-Framework/xpui-backends", branch = "main", features = ["golden"] }
 ```
 
-Both backends in one repository costs a consumer nothing: cargo resolves per
+All three backends in one repository costs a consumer nothing: cargo resolves per
 crate, so a manifest naming `xpui-fui` compiles `xpui-fui` alone. The crates
 depend on [`xpui`](https://github.com/XPUI-Framework/xpui-framework), and the
 `embedded_graphics` backend on [`xpui-chrome`](https://github.com/XPUI-Framework/xpui-chrome)
@@ -97,7 +102,7 @@ flowchart TD
   xpui["xpui<br/>the framework"]
   chrome["xpui-chrome<br/>components"]
   boards["xpui-boards<br/>eight devices"]
-  backends["xpui-backends<br/>two backends"]
+  backends["xpui-backends<br/>three backends"]
   simulator["xpui-simulator<br/>a window"]
   gallery["xpui-gallery<br/>the app"]
   rp2040["xpui-rp2040<br/>firmware"]
