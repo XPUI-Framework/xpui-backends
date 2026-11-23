@@ -1,6 +1,6 @@
 # Choosing a backend
 
-Which of the two backends you want depends on one question: does something
+Which of the three backends you want depends on one question: does something
 already own your panel?
 
 ## No — I have a `DrawTarget`
@@ -30,7 +30,20 @@ and FreeInkUI's own `src/FreeInkUI.cpp`, as
 A firmware with its own themed renderer can implement the same ABI itself
 rather than binding to FreeInkUI; that is a supported path, not a fork.
 
-## Writing a third
+## Yes — and my code is a dessen app
+
+Take [`xpui-dessen`](../dessen/). [Dessen](https://github.com/Free-Ink/dessen)
+runs small sandboxed RV32IM binaries inside CrossPoint and FreeInk firmware,
+launched from the SD card instead of flashed. The firmware owns the panel and
+draws through FreeInkUI; an app reaches it only through dessen's system calls.
+The backend answers `Canvas` and `TextMetrics` with those calls, takes
+`Chrome` from `xpui-chrome`, and turns each finished dessen event into the
+frames `InputSource` and `Clock` answer. Apps build for
+`riscv32im-unknown-none-elf`, and one `app.bin` runs on every board, whatever
+its chip. [`dessen/docs/coverage.md`](../dessen/docs/coverage.md) lists what
+dessen cannot do yet, clipping first.
+
+## Writing a fourth
 
 `xpui`'s [`docs/writing-a-backend.md`](https://github.com/XPUI-Framework/xpui-framework/blob/main/docs/writing-a-backend.md)
 is the path through the five traits, and the obligations the compiler cannot

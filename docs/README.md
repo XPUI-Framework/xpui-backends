@@ -5,8 +5,13 @@ repository, and what each is for:
 
 | | |
 |---|---|
-| [choosing-a-backend.md](choosing-a-backend.md) | when `embedded_graphics`, when [FreeInkUI](https://github.com/Free-Ink/freeink-sdk/tree/main/libs/ui/FreeInkUI), and what a third would need |
+| [choosing-a-backend.md](choosing-a-backend.md) | when `embedded_graphics`, when [FreeInkUI](https://github.com/Free-Ink/freeink-sdk/tree/main/libs/ui/FreeInkUI), when dessen, and what a fourth would need |
 | [contributing.md](contributing.md) | building it, the gate, the five review steps, and how a commit is written |
+| [dessen/docs/reference.md](../dessen/docs/reference.md) | the `xpui-dessen` reference: its index |
+| [dessen/docs/reference/backend.md](../dessen/docs/reference/backend.md) | `Backend`, `Device`, `install` and `run` |
+| [dessen/docs/reference/input.md](../dessen/docs/reference/input.md) | how one dessen event becomes `xpui` frames, and the clock they read |
+| [dessen/docs/reference/testing.md](../dessen/docs/reference/testing.md) | the host doubles: dessen's calls off the VM, recorded |
+| [dessen/docs/coverage.md](../dessen/docs/coverage.md) | which dessen call answers each host trait, and what dessen cannot do yet |
 | [embedded_graphics/docs/reference.md](../embedded_graphics/docs/reference.md) | the `xpui-embedded-graphics` reference: its index |
 | [embedded_graphics/docs/reference/backend.md](../embedded_graphics/docs/reference/backend.md) | `Backend`, `DisplayLoan`, `InputState`, `PacedFill`, `Palette` |
 | [embedded_graphics/docs/reference/fonts.md](../embedded_graphics/docs/reference/fonts.md) | `Fonts`, `Family`, `Tier`, `Face`, `Piece`, `font_tier!`, and switching the family |

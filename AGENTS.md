@@ -2,11 +2,12 @@
 
 ## What this is, and what it may not become
 
-The two things that put `xpui` pixels on a panel, and the two helpers they
+The three things that put `xpui` pixels on a panel, and the two helpers they
 need. `xpui-embedded-graphics` draws every pixel itself through any
 `DrawTarget`, with `xpui-chrome`'s components and u8g2 faces; `xpui-fui` calls
 FreeInkUI over a C ABI, from a Rust half in `fui/src/` and a C++ half in
-`fui/cpp/`. `xpui-screenshot` is the host-side framebuffer and golden
+`fui/cpp/`; `xpui-dessen` draws through a dessen app's system calls, with
+`xpui-chrome`'s components, and builds only for `riscv32im`. `xpui-screenshot` is the host-side framebuffer and golden
 comparison a backend proves itself with; `xpui-abi-check` compares a C header
 against the Rust that declares it, on types.
 
@@ -52,9 +53,9 @@ change is done, and read the real exit code.
 
 ## Style that bites here
 
-- **`no_std` in the two backends.** `alloc::` explicitly; `std` is
+- **`no_std` in the three backends.** `alloc::` explicitly; `std` is
   `xpui-screenshot`'s and `xpui-abi-check`'s alone, apart from `fui`'s
-  host-only `testing` doubles.
+  and `dessen`'s host-only `testing` doubles.
 - **Every `unsafe` block carries a `// Safety:` line** naming the invariant,
   and every `extern "C"` declaration that takes a pointer carries a
   `# Safety` section. `clippy::undocumented_unsafe_blocks` is denied.
@@ -83,6 +84,8 @@ change is done, and read the real exit code.
 | [`embedded_graphics/docs/reference.md`](embedded_graphics/docs/reference.md), [`embedded_graphics/docs/reference/backend.md`](embedded_graphics/docs/reference/backend.md), [`embedded_graphics/docs/reference/fonts.md`](embedded_graphics/docs/reference/fonts.md) | doctests, mounted by `embedded_graphics/src/lib.rs`; `the reference mirrors rustdoc` |
 | [`fui/README.md`](fui/README.md), [`fui/docs/design.md`](fui/docs/design.md) | doctests, mounted by `fui/src/lib.rs` |
 | [`fui/docs/reference.md`](fui/docs/reference.md), [`fui/docs/reference/backend.md`](fui/docs/reference/backend.md), [`fui/docs/reference/lifecycle.md`](fui/docs/reference/lifecycle.md), [`fui/docs/reference/raw.md`](fui/docs/reference/raw.md) | doctests, mounted by `fui/src/lib.rs`, linking against the `testing` doubles; `the reference mirrors rustdoc` |
+| [`dessen/README.md`](dessen/README.md), [`dessen/docs/coverage.md`](dessen/docs/coverage.md) | doctests, mounted by `dessen/src/lib.rs` |
+| [`dessen/docs/reference.md`](dessen/docs/reference.md), [`dessen/docs/reference/backend.md`](dessen/docs/reference/backend.md), [`dessen/docs/reference/input.md`](dessen/docs/reference/input.md), [`dessen/docs/reference/testing.md`](dessen/docs/reference/testing.md) | doctests, mounted by `dessen/src/lib.rs`, against the `testing` doubles; `the reference mirrors rustdoc` |
 | [`fui/cpp/README.md`](fui/cpp/README.md), [`fui/docs/firmware.md`](fui/docs/firmware.md), [`fui/docs/coverage.md`](fui/docs/coverage.md) | paths and commands resolve; any `cpp` fence is compiled by `documented C++ compiles` |
 | [`screenshot/README.md`](screenshot/README.md), [`screenshot/docs/reference.md`](screenshot/docs/reference.md) | doctests, mounted by `screenshot/src/lib.rs` behind `golden`; the reference, `the reference mirrors rustdoc` |
 | [`abi-check/README.md`](abi-check/README.md) | paths resolve; its fences are `text` and `toml` on purpose |

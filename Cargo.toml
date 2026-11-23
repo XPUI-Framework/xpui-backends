@@ -10,7 +10,14 @@
 [workspace]
 # `xtask` is the gate. A member rather than a separate workspace so one
 # `cargo test` reaches its tests.
-members = ["abi-check", "embedded_graphics", "fui", "screenshot", "xtask"]
+members = [
+    "abi-check",
+    "dessen",
+    "embedded_graphics",
+    "fui",
+    "screenshot",
+    "xtask",
+]
 resolver = "3"
 
 [workspace.package]
@@ -25,6 +32,10 @@ repository = "https://github.com/XPUI-Framework/xpui-backends"
 # this repository has to build without its siblings on disk.
 xpui = { git = "https://github.com/XPUI-Framework/xpui-framework", branch = "main" }
 xpui-chrome = { git = "https://github.com/XPUI-Framework/xpui-chrome", branch = "main" }
+# The dessen app SDK, for `xpui-dessen`: a crate in a subdirectory of the
+# dessen repository, which cargo finds by name. Calls and constants only; the
+# app, not the backend, turns on dessen's entry point and heap.
+dessen = { git = "https://github.com/Free-Ink/dessen", branch = "master", default-features = false }
 
 xpui-abi-check = { path = "abi-check" }
 # `default-features = false` here so a member that only wants `Framebuffer`
@@ -40,6 +51,11 @@ xpui-screenshot = { path = "screenshot", default-features = false }
 [workspace.lints.clippy]
 undocumented_unsafe_blocks = "deny"
 too_long_first_doc_paragraph = "deny"
+
+# `xpui_static_host`: how a firmware links its one backend instead of
+# installing it. `xpui-dessen` answers it; set through RUSTFLAGS by the app.
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(xpui_static_host)"] }
 
 [workspace.lints.rustdoc]
 unescaped_backticks = "deny"
