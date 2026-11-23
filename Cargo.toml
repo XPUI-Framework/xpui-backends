@@ -35,10 +35,7 @@ xpui-chrome = { git = "https://github.com/XPUI-Framework/xpui-chrome", branch = 
 # The dessen app SDK, for `xpui-dessen`: a crate in a subdirectory of the
 # dessen repository, which cargo finds by name. Calls and constants only; the
 # app, not the backend, turns on dessen's entry point and heap.
-# TEMPORARY, do not commit: a path into the dessen checkout until its
-# `xpui-support` branch is pushed. Then this becomes
-dessen = { git = "https://github.com/Free-Ink/dessen", branch = "xpui-support", default-features = false }
-# dessen = { path = "../../Freeink/dessen/sdk/rust", default-features = false }
+dessen = { git = "https://github.com/Free-Ink/dessen", branch = "master", default-features = false }
 
 xpui-abi-check = { path = "abi-check" }
 # `default-features = false` here so a member that only wants `Framebuffer`
