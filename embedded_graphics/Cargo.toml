@@ -27,7 +27,7 @@ embedded-graphics = "0.8"
 # time with no buffer and no allocation. `no_std` with nothing to opt into —
 # its one optional feature is an `embedded-graphics` `TextRenderer` shim, and
 # this backend draws through `FontRenderer` directly instead.
-u8g2-fonts = "0.8"
+u8g2-fonts = "0.9"
 
 # What makes `Backend` genuinely `Sync` rather than claiming to be. See
 # `src/guarded.rs`.
