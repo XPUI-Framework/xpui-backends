@@ -56,7 +56,7 @@ checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
 [[package]]
 name = "dessen"
 version = "0.1.0"
-source = "git+https://github.com/Free-Ink/dessen?branch=master#3bc4c0fbe689a6cda5d45db8eee8248732b9b908"
+source = "git+https://github.com/Free-Ink/dessen?branch=master#29854991b14e3c2f828b696aa59f844103191f53"
 
 [[package]]
 name = "embedded-graphics"
